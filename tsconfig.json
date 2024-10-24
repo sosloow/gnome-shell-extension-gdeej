@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "outDir": "./dist",
+    "sourceMap": false,
+    "strict": true,
+    "target": "ES2022",
+    "lib": [
+      "ES2022"
+    ],
+    // "typeRoots": ["./node_modules/@types", "./node_modules/@girs"],
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+    "exactOptionalPropertyTypes": true
+  },
+  "include": [
+    "src/gnome.d.ts"
+  ],
+  "files": [
+    "src/extension.ts",
+    "src/serial.ts",
+    "src/utils.ts"
+    // "prefs.ts"
+  ]
+}
