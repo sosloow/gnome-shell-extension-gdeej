@@ -5,23 +5,21 @@
     "outDir": "./dist",
     "sourceMap": false,
     "strict": true,
-    "target": "ES2022",
+    "target": "ES2023",
     "lib": [
-      "ES2022"
+      "ES2023"
     ],
-    // "typeRoots": ["./node_modules/@types", "./node_modules/@girs"],
     "esModuleInterop": true,
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
-    "exactOptionalPropertyTypes": true
+    "exactOptionalPropertyTypes": true,
+    "experimentalDecorators": true
   },
   "include": [
-    "src/gnome.d.ts"
+    "src/**/*.ts"
   ],
   "files": [
     "src/extension.ts",
-    "src/serial.ts",
-    "src/utils.ts"
-    // "prefs.ts"
+    "src/prefs.ts"
   ]
 }

@@ -1,51 +1,57 @@
-import Gtk from 'gi://Gtk';
+// import Gtk from 'gi://Gtk';
 import Adw from 'gi://Adw';
 import Gio from 'gi://Gio';
-import { ExtensionPreferences, gettext as _ } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
+import {
+  ExtensionPreferences,
+  gettext as _
+} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
+
+import { settingsKeys } from './constants.js';
 
 export default class GnomeRectanglePreferences extends ExtensionPreferences {
-  _settings?: Gio.Settings
+  _settings?: Gio.Settings;
 
-  fillPreferencesWindow(window: Adw.PreferencesWindow) {
+  async fillPreferencesWindow(window: Adw.PreferencesWindow) {
     this._settings = this.getSettings();
 
     const page = new Adw.PreferencesPage({
       title: _('General'),
-      iconName: 'dialog-information-symbolic',
+      iconName: 'dialog-information-symbolic'
     });
 
-    const animationGroup = new Adw.PreferencesGroup({
-      title: _('Animation'),
-      description: _('Configure move/resize animation'),
+    const deviceGroup = new Adw.PreferencesGroup({
+      title: _('Serial device'),
+      description: _('Configure path to serial device')
     });
-    page.add(animationGroup);
+    page.add(deviceGroup);
 
-    const animationEnabled = new Adw.SwitchRow({
-      title: _('Enabled'),
-      subtitle: _('Wether to animate windows'),
+    const autoDetectEnabled = new Adw.SwitchRow({
+      title: _('Auto-detect'),
+      subtitle: _('Automatically detect Deej serial device')
     });
-    animationGroup.add(animationEnabled);
+    deviceGroup.add(autoDetectEnabled);
 
-    const paddingGroup = new Adw.PreferencesGroup({
-      title: _('Paddings'),
-      description: _('Configure the padding between windows'),
+    const devicePath = new Adw.EntryRow({
+      title: _('Device path')
+      // subtitle: _('Path to Deej serial device'),
     });
-    page.add(paddingGroup);
+    deviceGroup.add(devicePath);
 
-    const paddingInner = new Adw.SpinRow({
-      title: _('Inner'),
-      subtitle: _('Padding between windows'),
-      adjustment: new Gtk.Adjustment({
-        lower: 0,
-        upper: 1000,
-        stepIncrement: 1
-      })
-    });
-    paddingGroup.add(paddingInner);
+    window.add(page);
 
-    window.add(page)
+    this._settings!.bind(
+      settingsKeys.DEVICE_AUTO_DETECT,
+      autoDetectEnabled,
+      'active',
+      Gio.SettingsBindFlags.DEFAULT
+    );
+    this._settings!.bind(
+      settingsKeys.DEVICE_PATH,
+      devicePath,
+      'value',
+      Gio.SettingsBindFlags.DEFAULT
+    );
 
-    this._settings!.bind('animate', animationEnabled, 'active', Gio.SettingsBindFlags.DEFAULT);
-    this._settings!.bind('padding-inner', paddingInner, 'value', Gio.SettingsBindFlags.DEFAULT);
+    Gio.Subprocess.new([`${this.path}/deej-preferences`], 0);
   }
 }

@@ -1,5 +1,5 @@
 {
-  "name": "deej",
+  "name": "Deej",
   "description": "Control your audio with a DIY mixer",
   "uuid": "deej@kareraisu.me",
   "settings-schema": "org.gnome.shell.extensions.deej",

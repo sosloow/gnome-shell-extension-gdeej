@@ -1,73 +1,254 @@
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
+import GObject from 'gi://GObject';
+import { gettext as _ } from 'resource:///org/gnome/shell/extensions/extension.js';
 
-interface SerialConstructorProps {
-  devicePath: string;
-}
-export default class Serial {
-  devicePath: string;
+import { settings, state } from './extension.js';
+import { settingsKeys } from './constants.js';
+import { cmdStream } from './utils/os.js';
+import { waitForIdle, notify } from './utils/decorators.js';
 
-  #decoder: TextDecoder;
-  #serialSource?: GLib.Source;
-  #serialStream?: Gio.UnixInputStream;
-  #serialDevice?: Gio.FileInputStream;
+Gio._promisify(Gio.DataInputStream.prototype, 'close_async');
 
-  constructor({ devicePath }: SerialConstructorProps) {
-    this.devicePath = devicePath;
+export default class Serial extends GObject.Object {
+  static OUTPUT_BUFFER_LIMIT = 10;
+  static RECONNECT_TIMEOUT_SECONDS = 1;
+  static CONNECTION_CHECK_TIMEOUT = 200;
 
-    this.#decoder = new TextDecoder();
+  enabled: boolean;
+  @notify()
+  accessor error: string = null!;
+  @notify({ initial: false })
+  accessor connected: boolean = false;
+
+  autoReconnect?: boolean = true;
+  output?: string;
+
+  #outputBuffer: string[] = [];
+
+  _deviceStdout?: Gio.DataInputStream;
+  _deviceStderr?: Gio.DataInputStream;
+  _deviceSubprocess?: Gio.Subprocess;
+
+  _readDeviceLoopCancellable?: Gio.Cancellable;
+
+  _reconnectTimeoutId?: number;
+  _settingsHandlerId?: number;
+
+  _bindings: GObject.Binding[] = [];
+
+  constructor() {
+    super();
+
+    this.enabled = settings.get_boolean(settingsKeys.SERIAL_ENABLED);
   }
 
-  enable() {
-    try {
-      this.#connect();
-    } catch (error) {
-      console.error(error);
+  _init() {
+    super._init();
+
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    this._settingsHandlerId = settings.connectObject(
+      `changed::${settingsKeys.SERIAL_ENABLED}`,
+      () =>
+        settings.get_boolean(settingsKeys.SERIAL_ENABLED)
+          ? this.enable()
+          : this.disable(),
+      `changed::${settingsKeys.DEVICE_PATH}`,
+      () => this._reconnect(true),
+      this
+    );
+
+    this._bindings = [
+      this.bind_property(
+        'error',
+        state,
+        'serialError',
+        GObject.BindingFlags.DEFAULT
+      ),
+      this.bind_property(
+        'connected',
+        state,
+        'serialConnected',
+        GObject.BindingFlags.DEFAULT
+      )
+    ];
+
+    this.enabled = settings.get_boolean(settingsKeys.SERIAL_ENABLED);
+
+    this._reconnect(true).catch((err) => console.warn(err));
+  }
+
+  async destroy() {
+    settings.disconnect(this._settingsHandlerId!);
+
+    for (const binding of this._bindings) {
+      binding.unbind();
     }
+
+    return this.disable();
   }
 
-  disable() {
-    this.#serialSource?.destroy();
-    this.#serialStream?.close(null);
-    this.#serialDevice?.close(null);
+  async enable() {
+    this.enabled = true;
+
+    return this._reconnect(true);
   }
 
-  destroy() {
-    this.disable();
+  async disable() {
+    this.enabled = false;
+
+    return this._disconnect();
   }
 
-  #connect() {
-    const file = Gio.File.new_for_path(this.devicePath);
-    this.#serialDevice = file.read(null);
+  async _disconnect() {
+    this.connected = false;
 
-    this.#serialStream = new Gio.UnixInputStream({
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      fd: this.#serialDevice.get_fd()
-    });
-    this.#serialSource = this.#serialStream.create_source(null);
+    if (this._reconnectTimeoutId) {
+      GLib.Source.remove(this._reconnectTimeoutId);
+    }
 
-    this.#serialSource.set_callback(() => {
-      try {
-        console.log(this.#readStream());
-      } catch (error) {
-        console.error(error);
+    try {
+      this._deviceSubprocess?.force_exit();
+    } catch (err) {
+      console.debug(err);
+    }
+    this._deviceSubprocess = null!;
+
+    try {
+      this._readDeviceLoopCancellable?.cancel();
+      await this._deviceStdout?.close_async(GLib.PRIORITY_DEFAULT, null);
+    } catch (err) {
+      console.debug(err);
+    }
+    this._deviceStdout = null!;
+
+    try {
+      await this._deviceStderr?.close_async(GLib.PRIORITY_DEFAULT, null);
+    } catch (err) {
+      console.debug(err);
+    }
+    this._deviceStderr = null!;
+  }
+
+  async #connect() {
+    const { subprocess, stdout, stderr } = await cmdStream([
+      'cat',
+      settings.get_string(settingsKeys.DEVICE_PATH)
+    ]);
+
+    // await this.#checkDevice(stderr);
+
+    this._deviceSubprocess = subprocess;
+    this._deviceStdout = stdout;
+    this._deviceStderr = stderr;
+
+    this._readDeviceLoop();
+  }
+
+  async _reconnect(force = false) {
+    await this._disconnect();
+
+    if (!this.enabled || (!force && !this.autoReconnect)) {
+      return;
+    }
+
+    this._reconnectTimeoutId = GLib.timeout_add_seconds(
+      GLib.PRIORITY_LOW,
+      Serial.RECONNECT_TIMEOUT_SECONDS,
+      () => {
+        this._reconnectTimeoutId = null!;
+
+        this.#connect().catch((err) => {
+          console.debug(err);
+          this.error = _('Failed to connect');
+
+          this._reconnect();
+        });
 
         return GLib.SOURCE_REMOVE;
       }
-
-      return GLib.SOURCE_CONTINUE;
-    });
-
-    this.#serialSource.attach(null);
+    );
   }
 
-  #readStream() {
-    if (!this.#serialStream) {
-      throw new Error('Serial device missing');
+  @waitForIdle
+  _readDeviceLoop() {
+    if (!this._deviceStdout) {
+      return this._reconnect();
     }
 
-    const contentsBytes = this.#serialStream.read_bytes(4096, null);
-    return this.#decoder.decode(contentsBytes.toArray()).trim();
+    this._readDeviceLoopCancellable = new Gio.Cancellable();
+
+    this._deviceStdout.read_line_async(
+      GLib.PRIORITY_DEFAULT,
+      this._readDeviceLoopCancellable,
+      (stream, res) => {
+        try {
+          if (!stream) {
+            throw new Error('Input stream is missing');
+          }
+
+          const [line] = stream.read_line_finish_utf8(res);
+
+          if (line === null) {
+            throw new Error('Failed to read device');
+          }
+
+          if (line) {
+            this.#pushToOutput(line);
+          }
+
+          if (!this.connected) {
+            this.connected = true;
+            this.error = null!;
+          }
+
+          this._readDeviceLoop();
+        } catch (err) {
+          if (
+            err instanceof Gio.IOErrorEnum &&
+            err.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.CANCELLED)
+          ) {
+            return;
+          }
+
+          this.error = _('Failed to read device');
+          console.debug(err);
+
+          this._reconnect();
+        }
+      }
+    );
+  }
+
+  #pushToOutput(line: string) {
+    this.output = line;
+
+    this.#outputBuffer.push(line);
+
+    while (this.#outputBuffer.length > Serial.OUTPUT_BUFFER_LIMIT) {
+      this.#outputBuffer.shift();
+    }
   }
 }
+GObject.registerClass(
+  {
+    Properties: {
+      error: GObject.ParamSpec.string(
+        'error',
+        'error',
+        'Extension error',
+        GObject.ParamFlags.READWRITE | GObject.ParamFlags.EXPLICIT_NOTIFY,
+        ''
+      ),
+      connected: GObject.ParamSpec.boolean(
+        'connected',
+        'connected',
+        'Is serial device connected',
+        GObject.ParamFlags.READWRITE | GObject.ParamFlags.EXPLICIT_NOTIFY,
+        false
+      )
+    }
+  },
+  Serial
+);

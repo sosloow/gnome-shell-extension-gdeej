@@ -1,15 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <schemalist>
     <schema id="org.gnome.shell.extensions.deej" path="/org/gnome/shell/extensions/deej/">
-        <key name="padding-inner" type="i">
-            <default>8</default>
-            <summary>Inner padding</summary>
-            <description>Padding between windows</description>
-        </key>
-        <key name="animate" type="b">
+        <key name="serial-enabled" type="b">
             <default>true</default>
-            <summary>Animation</summary>
-            <description>Whether to animate window movement/resizing</description>
+            <summary>Serial service enabled</summary>
+            <description></description>
+        </key>
+        <key name="device-auto-detect" type="b">
+            <default>true</default>
+            <summary>Auto-detect serial device</summary>
+            <description></description>
+        </key>
+        <key name="device-path" type="s">
+            <default>"/dev/ttyACM0"</default>
+            <summary>Path to the serial device</summary>
+            <description></description>
         </key>
     </schema>
 </schemalist>

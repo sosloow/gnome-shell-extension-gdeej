@@ -1,31 +1,27 @@
 NAME=deej
 DOMAIN=kareraisu.me
 
-.PHONY: all pack install clean
-
-all: dist
+.PHONY: dist pack install clean
 
 node_modules: package.json
-	npm install
+	npm install --no-audit
 
-dist: node_modules
-	tsc
+dist: schemas/gschemas.compiled
+	npx tsc
+	@cp -r schemas dist/
+	@cp -r assets dist/
+	@cp metadata.json dist/
 
 schemas/gschemas.compiled: schemas/org.gnome.shell.extensions.$(NAME).gschema.xml
 	glib-compile-schemas schemas
 
-$(NAME).zip: dist schemas/gschemas.compiled
-	@cp -r schemas dist/
-	@cp -r assets dist/
-	@cp metadata.json dist/
+pack: dist
 	@(cd dist && zip ../$(NAME).zip -9r .)
 
-pack: $(NAME).zip
-
-install: $(NAME).zip
+install: dist
 	@touch ~/.local/share/gnome-shell/extensions/$(NAME)@$(DOMAIN)
 	@rm -rf ~/.local/share/gnome-shell/extensions/$(NAME)@$(DOMAIN)
-	@mv dist ~/.local/share/gnome-shell/extensions/$(NAME)@$(DOMAIN)
+	@cp -r dist ~/.local/share/gnome-shell/extensions/$(NAME)@$(DOMAIN)
 
 clean:
 	@rm -rf dist $(NAME).zip

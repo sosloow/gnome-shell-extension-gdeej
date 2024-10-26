@@ -1,5 +1,5 @@
 import GObject from 'gi://GObject';
-
+import Gio from 'gi://Gio';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {
   Extension,
@@ -7,21 +7,62 @@ import {
 } from 'resource:///org/gnome/shell/extensions/extension.js';
 
 import * as QuickSettings from 'resource:///org/gnome/shell/ui/quickSettings.js';
-const QuickSettingsMenu = Main.panel.statusArea.quickSettings;
 
 import Serial from './serial.js';
-import { getIcon } from './utils.js';
+import State from './utils/state.js';
+import { getIcon } from './utils/misc.js';
 
-const DEVICE_PATH = '/dev/ttyACM0';
+import { settingsKeys } from './constants.js';
 
 class DeejToggle extends QuickSettings.QuickMenuToggle {
+  _errorHandlerId?: number;
+  _connectedHandlerId?: number;
+
   _init() {
     super._init({
       title: _('Deej'),
       toggleMode: true
     });
-    this.gicon = getIcon(ext.path, 'deej-logo-symbolic');
-    console.log('deej', this.title);
+    this.gicon = getIcon(extension.path, 'deej-logo-symbolic');
+
+    settings.bind(
+      settingsKeys.SERIAL_ENABLED,
+      this,
+      'checked',
+      Gio.SettingsBindFlags.DEFAULT
+    );
+
+    this._errorHandlerId = state.connect('notify::serialError', () => {
+      if (state.serialError) {
+        this._updateHeader(state.serialError);
+      }
+    });
+    this._connectedHandlerId = state.connect('notify::serialConnected', () => {
+      if (state.serialConnected) {
+        this._updateHeader(_('Connected'));
+      } else if (!state.serialError) {
+        this._updateHeader(_('Disconnected'));
+      }
+    });
+
+    this._updateHeader();
+
+    this.menu.addSettingsAction(
+      _('Settings'),
+      'org.gnome.shell.extensions.deej.preferences.desktop'
+    );
+  }
+
+  _updateHeader(subtitle?: string) {
+    this.menu.setHeader(this.gicon, _('Deej'), subtitle);
+  }
+
+  destroy() {
+    // state.disconnect(this._errorHandlerId!);
+    // state.disconnect(this._connectedHandlerId!);
+    this._errorHandlerId = null!;
+
+    super.destroy();
   }
 }
 GObject.registerClass(DeejToggle);
@@ -35,52 +76,85 @@ class DeejIndicator extends QuickSettings.SystemIndicator {
     this._toggle = new DeejToggle();
     this.quickSettingsItems.push(this._toggle);
   }
+
+  destroy() {
+    this.quickSettingsItems.forEach((item) => item.destroy());
+
+    super.destroy();
+  }
 }
 GObject.registerClass(DeejIndicator);
 
-interface DeejConfig {
-  devicePath: string;
-}
 export class Deej {
-  #config: DeejConfig = {
-    devicePath: DEVICE_PATH
-  };
-  _indicator?: DeejIndicator | null;
-  serial?: Serial | null;
+  _indicator?: DeejIndicator;
+  serial?: Serial;
+  _notificationHandlerId?: number;
+  _icon?: Gio.Icon;
 
   constructor() {
-    this.serial = new Serial({ devicePath: this.#config.devicePath });
+    this.serial = new Serial();
   }
 
   init() {
     this._indicator = new DeejIndicator();
+    this._icon = getIcon(extension.path, 'deej-logo-symbolic');
+
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
-    QuickSettingsMenu.addExternalIndicator(this._indicator);
+    Main.panel.statusArea.quickSettings.addExternalIndicator(this._indicator);
 
-    this.serial?.enable();
+    this._notificationHandlerId = state.connect(
+      'notify::serialConnected',
+      () => {
+        if (!settings.get_boolean(settingsKeys.SERIAL_ENABLED)) {
+          return;
+        }
+
+        this._sendOSDNotification(
+          state.serialConnected ? _('Deej connected') : _('Deej disconnected')
+        );
+      }
+    );
+  }
+
+  _sendOSDNotification(message: string) {
+    Main.osdWindowManager.show(-1, this._icon, message, null, null);
   }
 
   destroy() {
     this._indicator?.destroy();
-    this._indicator = null;
-    this.serial = null;
+    this._indicator = null!;
+    this._icon = null!;
+
+    this.serial?.destroy();
+    this.serial = null!;
+
+    state.disconnect(this._notificationHandlerId!);
+    this._notificationHandlerId = null!;
   }
 }
 
-export let ext: Extension;
-export default class E extends Extension {
-  deej: Deej | null = null;
+export let extension: DeejExtension;
+export let settings: Gio.Settings;
+export let state: State;
+export default class DeejExtension extends Extension {
+  deej?: Deej;
+
   enable() {
-    // eslint-disable-next-line @typescript-eslint/no-this-alias
-    ext = this;
+    extension = this!;
+    settings = this.getSettings();
+    state = new State();
 
     this.deej = new Deej();
     this.deej.init();
   }
   disable() {
     this.deej?.destroy();
-    this.deej = null;
-    ext = null!;
+    this.deej = null!;
+
+    state = null!;
+
+    extension = null!;
+    settings = null!;
   }
 }
