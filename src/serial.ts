@@ -4,9 +4,14 @@ import GObject from 'gi://GObject';
 import { gettext as _ } from 'resource:///org/gnome/shell/extensions/extension.js';
 
 import { settings, state } from './extension.js';
-import { settingsKeys } from './constants.js';
-import { cmdStream } from './utils/os.js';
+import { settingsKeys, serialDeviceStatuses } from './constants.js';
+import { cmdStream, detectSerialDevices } from './utils/os.js';
 import { waitForIdle, notify } from './utils/decorators.js';
+
+type serialDevice = {
+  path: string;
+  status: serialDeviceStatuses;
+};
 
 Gio._promisify(Gio.DataInputStream.prototype, 'close_async');
 
@@ -14,17 +19,30 @@ export default class Serial extends GObject.Object {
   static OUTPUT_BUFFER_LIMIT = 10;
   static RECONNECT_TIMEOUT_SECONDS = 1;
   static CONNECTION_CHECK_TIMEOUT = 200;
+  static AUTODETECT_PRIORITY = [
+    serialDeviceStatuses.ACTIVE,
+    serialDeviceStatuses.DISABLED,
+    serialDeviceStatuses.UNKNOWN,
+    serialDeviceStatuses.ERROR
+  ];
+  static INPUT_REGEXP = /(\d+\|?)+/;
 
   enabled: boolean;
   @notify()
-  accessor error: string = null!;
-  @notify({ initial: false })
-  accessor connected: boolean = false;
+  accessor error: string;
+  @notify()
+  accessor connected: boolean;
+  @notify()
+  accessor initialConnect: boolean;
 
-  autoReconnect?: boolean = true;
+  autoReconnect: boolean;
+  autoDetect: boolean;
   output?: string;
 
   #outputBuffer: string[] = [];
+
+  #detectedDevices: serialDevice[] = [];
+  _devicePath?: string;
 
   _deviceStdout?: Gio.DataInputStream;
   _deviceStderr?: Gio.DataInputStream;
@@ -40,7 +58,14 @@ export default class Serial extends GObject.Object {
   constructor() {
     super();
 
+    this.error = null!;
+    this.connected = false;
+    this.initialConnect = true;
     this.enabled = settings.get_boolean(settingsKeys.SERIAL_ENABLED);
+    this.autoReconnect = settings.get_boolean(
+      settingsKeys.DEVICE_AUTO_RECONNECT
+    );
+    this.autoDetect = settings.get_boolean(settingsKeys.DEVICE_AUTO_DETECT);
   }
 
   _init() {
@@ -56,6 +81,22 @@ export default class Serial extends GObject.Object {
           : this.disable(),
       `changed::${settingsKeys.DEVICE_PATH}`,
       () => this._reconnect(true),
+      `changed::${settingsKeys.DEVICE_AUTO_RECONNECT}`,
+      () => {
+        this.autoReconnect = settings.get_boolean(
+          settingsKeys.DEVICE_AUTO_RECONNECT
+        );
+
+        if (this.autoReconnect && !this.connected) {
+          this._reconnect(true);
+        }
+      },
+      `changed::${settingsKeys.DEVICE_AUTO_DETECT}`,
+      () => {
+        this.autoDetect = settings.get_boolean(settingsKeys.DEVICE_AUTO_DETECT);
+
+        this._reconnect(true);
+      },
       this
     );
 
@@ -71,12 +112,22 @@ export default class Serial extends GObject.Object {
         state,
         'serialConnected',
         GObject.BindingFlags.DEFAULT
+      ),
+      this.bind_property(
+        'initialConnect',
+        state,
+        'serialInitialConnect',
+        GObject.BindingFlags.DEFAULT
       )
     ];
 
     this.enabled = settings.get_boolean(settingsKeys.SERIAL_ENABLED);
 
-    this._reconnect(true).catch((err) => console.warn(err));
+    this._reconnect(true).catch((err) => {
+      console.warn(err);
+
+      this.#updateDeviceStatus(serialDeviceStatuses.ERROR);
+    });
   }
 
   async destroy() {
@@ -132,10 +183,9 @@ export default class Serial extends GObject.Object {
   }
 
   async #connect() {
-    const { subprocess, stdout, stderr } = await cmdStream([
-      'cat',
-      settings.get_string(settingsKeys.DEVICE_PATH)
-    ]);
+    const devicePath = await this.#getDevicePath();
+
+    const { subprocess, stdout, stderr } = await cmdStream(['cat', devicePath]);
 
     // await this.#checkDevice(stderr);
 
@@ -160,6 +210,7 @@ export default class Serial extends GObject.Object {
         this._reconnectTimeoutId = null!;
 
         this.#connect().catch((err) => {
+          this.#updateDeviceStatus(serialDeviceStatuses.ERROR);
           console.debug(err);
           this.error = _('Failed to connect');
 
@@ -199,6 +250,7 @@ export default class Serial extends GObject.Object {
           }
 
           if (!this.connected) {
+            this.#updateDeviceStatus(serialDeviceStatuses.ACTIVE);
             this.connected = true;
             this.error = null!;
           }
@@ -209,13 +261,20 @@ export default class Serial extends GObject.Object {
             err instanceof Gio.IOErrorEnum &&
             err.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.CANCELLED)
           ) {
+            this.#updateDeviceStatus(serialDeviceStatuses.DISABLED);
+
             return;
           }
 
+          this.#updateDeviceStatus(serialDeviceStatuses.ERROR);
           this.error = _('Failed to read device');
           console.debug(err);
 
           this._reconnect();
+        } finally {
+          if (this.initialConnect) {
+            this.initialConnect = false;
+          }
         }
       }
     );
@@ -224,10 +283,68 @@ export default class Serial extends GObject.Object {
   #pushToOutput(line: string) {
     this.output = line;
 
+    this.#validateInput(line);
+
     this.#outputBuffer.push(line);
 
     while (this.#outputBuffer.length > Serial.OUTPUT_BUFFER_LIMIT) {
       this.#outputBuffer.shift();
+    }
+  }
+
+  #validateInput(line: string) {
+    if (!Serial.INPUT_REGEXP.test(line)) {
+      throw new Error('Invalid input data');
+    }
+  }
+
+  async #getDevicePath(): Promise<string> {
+    if (!this.autoDetect) {
+      this._devicePath = settings.get_string(settingsKeys.DEVICE_PATH);
+      return this._devicePath;
+    }
+
+    const devicePaths = await detectSerialDevices();
+
+    for (const path of devicePaths) {
+      const existingDevice = this.#detectedDevices.find(
+        ({ path: existingPath }) => existingPath === path
+      );
+      if (!existingDevice) {
+        this.#detectedDevices.push({
+          path,
+          status: serialDeviceStatuses.UNKNOWN
+        });
+      }
+    }
+
+    let device: serialDevice | null = null;
+    for (const status of Serial.AUTODETECT_PRIORITY) {
+      device =
+        this.#detectedDevices.find((device) => device.status === status) ??
+        null;
+
+      if (device) {
+        break;
+      }
+    }
+
+    if (!device) {
+      throw new Error('Autodetect: no serial device detected');
+    }
+
+    this._devicePath = device.path;
+
+    return this._devicePath;
+  }
+
+  #updateDeviceStatus(status: serialDeviceStatuses) {
+    const device = this.#detectedDevices.find(
+      ({ path }) => path === this._devicePath
+    );
+    console.log('bazinga', device, status);
+    if (device) {
+      device.status = status;
     }
   }
 }
@@ -237,7 +354,7 @@ GObject.registerClass(
       error: GObject.ParamSpec.string(
         'error',
         'error',
-        'Extension error',
+        'Serial error',
         GObject.ParamFlags.READWRITE | GObject.ParamFlags.EXPLICIT_NOTIFY,
         ''
       ),
@@ -245,6 +362,13 @@ GObject.registerClass(
         'connected',
         'connected',
         'Is serial device connected',
+        GObject.ParamFlags.READWRITE | GObject.ParamFlags.EXPLICIT_NOTIFY,
+        false
+      ),
+      initialConnect: GObject.ParamSpec.boolean(
+        'initialConnect',
+        'initialConnect',
+        'Is serial device connected for the first time',
         GObject.ParamFlags.READWRITE | GObject.ParamFlags.EXPLICIT_NOTIFY,
         false
       )

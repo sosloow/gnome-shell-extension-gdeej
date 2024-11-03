@@ -1,11 +1,11 @@
 import Gio from 'gi://Gio';
-// import GLib from 'gi://GLib';
+import GLib from 'gi://GLib';
 
 import { osPaths } from '../constants.js';
 
 Gio._promisify(Gio.Subprocess.prototype, 'communicate_utf8_async');
 
-export const cmd = (argv: string[]): Promise<string> => {
+export async function cmd(argv: string[]): Promise<string> {
   const subprocess = Gio.Subprocess.new(
     argv,
     Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_PIPE
@@ -13,8 +13,14 @@ export const cmd = (argv: string[]): Promise<string> => {
 
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
-  return subprocess.communicate_utf8_async(null, null);
-};
+  const [stdout, stderr] = await subprocess.communicate_utf8_async(null, null);
+
+  if (stderr) {
+    throw new Error(stderr);
+  }
+
+  return stdout.trim();
+}
 
 type CmdStreamResult = {
   subprocess: Gio.Subprocess;
@@ -44,14 +50,28 @@ export async function cmdStream(argv: string[]): Promise<CmdStreamResult> {
   };
 }
 
-export const detectSerialDevices = async () => {
-  let resultString: string;
+export function resolvePath(...segments: string[]) {
+  const startingPoint = segments[0].startsWith('/')
+    ? segments[0]
+    : GLib.get_current_dir();
 
-  try {
-    resultString = await cmd(['ls', '-l', osPaths.SERIAL_DIRECTORY]);
-  } catch (err) {
-    logError(err);
+  const fullPath = GLib.build_filenamev([startingPoint, ...segments.slice(1)]);
 
-    return [];
-  }
-};
+  const file = Gio.File.new_for_path(fullPath);
+  const canonicalPath = file.resolve_relative_path('.').get_path();
+
+  return canonicalPath as string;
+}
+
+export async function detectSerialDevices(): Promise<string[]> {
+  const resultString = await cmd(['ls', '-l', osPaths.SERIAL_DIRECTORY]);
+
+  return resultString
+    .split('\n')
+    .slice(1, resultString.length)
+    .map((lsEntries) => {
+      const parts = lsEntries.split(' ');
+
+      return resolvePath(osPaths.SERIAL_DIRECTORY, parts[parts.length - 1]);
+    });
+}

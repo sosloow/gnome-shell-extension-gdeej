@@ -40,9 +40,9 @@ export function waitForTimeout(timeoutMs = 1, priority = GLib.PRIORITY_LOW) {
 }
 
 type NotifyProps = {
-  initial?: boolean;
+  changed?: boolean;
 };
-export function notify({ initial = true }: NotifyProps = {}) {
+export function notify({ changed = false }: NotifyProps = {}) {
   return function (target: any, key: any, descriptor: any) {
     let value: any;
 
@@ -54,8 +54,10 @@ export function notify({ initial = true }: NotifyProps = {}) {
 
       value = newValue;
 
-      if (oldValue !== value && (oldValue !== undefined || initial)) {
-        this.notify(key);
+      this.notify(key);
+
+      if (changed && oldValue !== value) {
+        this.emit(`changed::${key}`);
       }
     };
   };

@@ -47,10 +47,7 @@ class DeejToggle extends QuickSettings.QuickMenuToggle {
 
     this._updateHeader();
 
-    this.menu.addSettingsAction(
-      _('Settings'),
-      'org.gnome.shell.extensions.deej.preferences.desktop'
-    );
+    this.menu.addAction(_('Settings'), () => extension.openPreferences());
   }
 
   _updateHeader(subtitle?: string) {
@@ -58,8 +55,8 @@ class DeejToggle extends QuickSettings.QuickMenuToggle {
   }
 
   destroy() {
-    // state.disconnect(this._errorHandlerId!);
-    // state.disconnect(this._connectedHandlerId!);
+    state.disconnect(this._errorHandlerId!);
+    state.disconnect(this._connectedHandlerId!);
     this._errorHandlerId = null!;
 
     super.destroy();
@@ -104,9 +101,12 @@ export class Deej {
     Main.panel.statusArea.quickSettings.addExternalIndicator(this._indicator);
 
     this._notificationHandlerId = state.connect(
-      'notify::serialConnected',
+      'changed::serialConnected',
       () => {
-        if (!settings.get_boolean(settingsKeys.SERIAL_ENABLED)) {
+        if (
+          !settings.get_boolean(settingsKeys.SERIAL_ENABLED) ||
+          state.serialInitialConnect
+        ) {
           return;
         }
 
