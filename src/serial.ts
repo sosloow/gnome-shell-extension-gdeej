@@ -342,7 +342,7 @@ export default class Serial extends GObject.Object {
     const device = this.#detectedDevices.find(
       ({ path }) => path === this._devicePath
     );
-    console.log('bazinga', device, status);
+
     if (device) {
       device.status = status;
     }

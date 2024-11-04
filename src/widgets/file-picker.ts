@@ -6,26 +6,24 @@ import { gettext as _ } from 'resource:///org/gnome/Shell/Extensions/js/extensio
 
 type FilePickerConstructorProps = {
   title: string;
-  placeholder: string;
 };
 export default class FilePickerRow extends Adw.EntryRow {
-  _placeholder?: string;
   _title?: string;
 
-  constructor({ title, placeholder }: FilePickerConstructorProps) {
+  constructor({ title }: FilePickerConstructorProps) {
     super({ title });
-
-    this._placeholder = placeholder;
   }
 
-  _init({ title, placeholder }: FilePickerConstructorProps) {
+  _init({ title }: FilePickerConstructorProps) {
     super._init({
       title
     });
-    this._placeholder = placeholder;
 
     const fileButton = new Gtk.Button({
-      label: _('Choose device')
+      // label: _('Choose device')
+      iconName: 'document-open-symbolic',
+      marginTop: 10,
+      marginBottom: 10
     });
     fileButton.connect('clicked', this._onFileButtonClicked.bind(this));
     this.add_suffix(fileButton);
@@ -42,18 +40,6 @@ export default class FilePickerRow extends Adw.EntryRow {
 
     fileChooser.add_button(_('Cancel'), Gtk.ResponseType.CANCEL);
     fileChooser.add_button(_('Open'), Gtk.ResponseType.ACCEPT);
-
-    fileChooser.connect('response', (dialog, response) => {
-      if (response === Gtk.ResponseType.ACCEPT) {
-        const file = fileChooser.get_file();
-        const filePath = file!.get_path();
-
-        if (filePath) {
-          this.text = filePath;
-        }
-      }
-      fileChooser.destroy();
-    });
 
     fileChooser.show();
   }

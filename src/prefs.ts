@@ -1,74 +1,62 @@
-// import Gtk from 'gi://Gtk';
 import Adw from 'gi://Adw';
+import Gtk from 'gi://Gtk';
 import Gio from 'gi://Gio';
+import GLib from 'gi://GLib';
 import {
-  ExtensionPreferences,
-  gettext as _
+  ExtensionPreferences
+  // gettext as _
 } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
-import FilePickerRow from './widgets/file-picker.js';
+// import FilePickerRow from './widgets/file-picker.js';
 
-import { settingsKeys } from './constants.js';
+// import { settingsKeys } from './constants.js';
 
 export default class GnomeRectanglePreferences extends ExtensionPreferences {
   _settings?: Gio.Settings;
+  #builder?: Gtk.Builder;
+  #generalPage?: Adw.PreferencesPage;
 
-  async fillPreferencesWindow(window: Adw.PreferencesWindow) {
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
+  fillPreferencesWindow(window: Adw.PreferencesWindow) {
+    const resourcePath = GLib.build_filenamev([this.path, 'deej.gresource']);
+    Gio.resources_register(Gio.resource_load(resourcePath));
+
     this._settings = this.getSettings();
 
-    const page = new Adw.PreferencesPage({
-      title: _('General'),
-      iconName: 'dialog-information-symbolic'
-    });
-
-    const deviceGroup = new Adw.PreferencesGroup({
-      title: _('Serial device'),
-      description: _('Configure path to serial device')
-    });
-    page.add(deviceGroup);
-
-    const autoReconnectEnabled = new Adw.SwitchRow({
-      title: _('Auto-reconnect'),
-      subtitle: _('Automatically reconnect to Deej serial device')
-    });
-    deviceGroup.add(autoReconnectEnabled);
-
-    const autoDetectEnabled = new Adw.SwitchRow({
-      title: _('Auto-detect'),
-      subtitle: _('Automatically detect Deej serial device')
-    });
-    deviceGroup.add(autoDetectEnabled);
-
-    let devicePath;
-    try {
-      devicePath = new FilePickerRow({
-        title: _('Device path'),
-        placeholder: _('Choose device...')
-      });
-    } catch (err) {
-      console.log('bazinga', err);
-    }
-    deviceGroup.add(devicePath!);
-
-    window.add(page);
-
-    this._settings!.bind(
-      settingsKeys.DEVICE_AUTO_RECONNECT,
-      autoReconnectEnabled,
-      'active',
-      Gio.SettingsBindFlags.DEFAULT
+    this.#builder = Gtk.Builder.new_from_resource(
+      '/org/gnome/shell/extensions/deej/ui/prefs.ui'
     );
-    this._settings!.bind(
-      settingsKeys.DEVICE_AUTO_DETECT,
-      autoDetectEnabled,
-      'active',
-      Gio.SettingsBindFlags.DEFAULT
-    );
-    this._settings!.bind(
-      settingsKeys.DEVICE_PATH,
-      devicePath!,
-      'text',
-      Gio.SettingsBindFlags.DEFAULT
-    );
+
+    this.#generalPage = this.#builder.get_object(
+      'page-general'
+    ) as Adw.PreferencesPage;
+
+    window.add(this.#generalPage);
+
+    // this._settings!.bind(
+    //   settingsKeys.DEVICE_AUTO_RECONNECT,
+    //   autoReconnectSwitch,
+    //   'active',
+    //   Gio.SettingsBindFlags.DEFAULT
+    // );
+    // this._settings!.bind(
+    //   settingsKeys.DEVICE_AUTO_DETECT,
+    //   autoDetectSwitch,
+    //   'active',
+    //   Gio.SettingsBindFlags.DEFAULT
+    // );
+    // this._settings!.bind(
+    //   settingsKeys.DEVICE_AUTO_DETECT,
+    //   devicePathEntry,
+    //   'visible',
+    //   Gio.SettingsBindFlags.INVERT_BOOLEAN
+    // );
+    // this._settings!.bind(
+    //   settingsKeys.DEVICE_PATH,
+    //   devicePathEntry,
+    //   'text',
+    //   Gio.SettingsBindFlags.DEFAULT
+    // );
   }
 }

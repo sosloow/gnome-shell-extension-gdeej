@@ -1,0 +1,31 @@
+using Gtk 4.0;
+using Adw 1;
+
+Adw.PreferencesPage page-general {
+  title: _('General');
+  icon-name: 'preferences-system-symbolic';
+
+  Adw.PreferencesGroup {
+    title: _('Serial device');
+
+    Adw.SwitchRow switch-auto-reconnect {
+      title: _('Auto-reconnect');
+      subtitle: _('Automatically reconnect to Deej serial device');
+    }
+
+    Adw.SwitchRow switch-auto-detect {
+      title: _('Auto-detect');
+      subtitle: _('Automatically detect Deej serial device');
+    }
+
+    Adw.EntryRow entry-device-path {
+      title: _('Path to device');
+
+      Button {
+        icon-name: 'document-open-symbolic';
+        margin-top: 10;
+        margin-bottom: 10;
+      }
+    }
+  }
+}
