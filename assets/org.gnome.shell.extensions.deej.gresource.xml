@@ -2,5 +2,7 @@
 <gresources>
     <gresource prefix="/org/gnome/shell/extensions/deej/">
         <file>ui/prefs.ui</file>
+        <file>ui/file-picker-row.ui</file>
+        <file>ui/slider-row.ui</file>
     </gresource>
 </gresources>

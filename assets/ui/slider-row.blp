@@ -1,0 +1,122 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $DeejSliderRow: Adw.PreferencesRow {
+    Box {
+        orientation: vertical;
+
+        Box main-row {
+            spacing: 12;
+            margin-start: 12;
+            margin-end: 12;
+            margin-top: 12;
+            margin-bottom: 6;
+
+            Label label-title {
+                label: _("Slider");
+                halign: start;
+                hexpand: true;
+                xalign: 0;
+
+                styles [
+                    "heading"
+                ]
+            }
+
+            Label {
+                label: _("Invert:");
+            }
+
+            Switch switch-invert {
+                valign: center;
+            }
+
+            Button btn-remove {
+                icon-name: "edit-delete-symbolic";
+                valign: center;
+
+                styles [
+                    "flat"
+                ]
+            }
+        }
+
+        Box controls-row {
+            spacing: 12;
+            margin-start: 12;
+            margin-end: 12;
+            margin-bottom: 12;
+
+            Box {
+                orientation: vertical;
+                spacing: 3;
+                width-request: 200;
+
+                DropDown dropdown-target {
+                    valign: center;
+                }
+
+                Label {
+                    label: _("Target Type");
+                    halign: start;
+
+                    styles [
+                        "caption",
+                        "dim-label"
+                    ]
+                }
+            }
+
+            Box {
+                orientation: vertical;
+                spacing: 3;
+                hexpand: true;
+                sensitive: false;
+                // Button btn-app-picker {
+                //     Box {
+                //         spacing: 8;
+                //         margin-start: 8;
+                //         margin-end: 8;
+                //         margin-top: 3;
+                //         margin-bottom: 3;
+                //         Image app-icon {
+                //             icon-name: "firefox-symbolic";
+                //             pixel-size: 10;
+                //         }
+                //         Label app-name {
+                //             label: "Firefox";
+                //             ellipsize: end;
+                //         }
+                //     }
+                // }
+                Button btn-app-picker {
+                    Box {
+                        spacing: 8;
+                        margin-start: 8;
+                        margin-end: 8;
+
+                        Image {
+                            icon-name: "application-x-executable-symbolic";
+                            pixel-size: 12;
+                        }
+
+                        Label label-app {
+                            label: _("Choose Application...");
+                            ellipsize: end;
+                        }
+                    }
+                }
+
+                Label app-hint {
+                    label: _("Target Application");
+                    halign: start;
+
+                    styles [
+                        "caption",
+                        "dim-label"
+                    ]
+                }
+            }
+        }
+    }
+}

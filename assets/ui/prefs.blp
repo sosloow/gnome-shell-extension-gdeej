@@ -18,14 +18,33 @@ Adw.PreferencesPage page-general {
       subtitle: _('Automatically detect Deej serial device');
     }
 
-    Adw.EntryRow entry-device-path {
-      title: _('Path to device');
+    $DeejFilePickerRow entry-device-path {}
+  }
+}
 
-      Button {
-        icon-name: 'document-open-symbolic';
-        margin-top: 10;
-        margin-bottom: 10;
-      }
+Adw.PreferencesPage page-sliders {
+  title: _('Sliders');
+  icon-name: 'media-eq-symbolic';
+
+  Adw.PreferencesGroup {
+    title: _('Add and remove sliders');
+
+    ListBox list-box-sliders {
+      styles [
+        'boxed-list'
+      ]
+
+      selection-mode: none;
+    }
+
+    Button btn-add-slider {
+      margin-top: 12;
+
+      styles [
+        'suggested-action'
+      ]
+
+      label: _('Add slider');
     }
   }
 }

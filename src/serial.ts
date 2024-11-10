@@ -5,7 +5,7 @@ import { gettext as _ } from 'resource:///org/gnome/shell/extensions/extension.j
 
 import { settings, state } from './extension.js';
 import { settingsKeys, serialDeviceStatuses } from './constants.js';
-import { cmdStream, detectSerialDevices } from './utils/os.js';
+import { serialStream, detectSerialDevices } from './utils/os.js';
 import { waitForIdle, notify } from './utils/decorators.js';
 
 type serialDevice = {
@@ -45,7 +45,6 @@ export default class Serial extends GObject.Object {
   _devicePath?: string;
 
   _deviceStdout?: Gio.DataInputStream;
-  _deviceStderr?: Gio.DataInputStream;
   _deviceSubprocess?: Gio.Subprocess;
 
   _readDeviceLoopCancellable?: Gio.Cancellable;
@@ -162,7 +161,7 @@ export default class Serial extends GObject.Object {
     try {
       this._deviceSubprocess?.force_exit();
     } catch (err) {
-      console.debug(err);
+      console.warn(err);
     }
     this._deviceSubprocess = null!;
 
@@ -170,28 +169,20 @@ export default class Serial extends GObject.Object {
       this._readDeviceLoopCancellable?.cancel();
       await this._deviceStdout?.close_async(GLib.PRIORITY_DEFAULT, null);
     } catch (err) {
-      console.debug(err);
+      console.warn(err);
     }
     this._deviceStdout = null!;
-
-    try {
-      await this._deviceStderr?.close_async(GLib.PRIORITY_DEFAULT, null);
-    } catch (err) {
-      console.debug(err);
-    }
-    this._deviceStderr = null!;
   }
 
   async #connect() {
     const devicePath = await this.#getDevicePath();
 
-    const { subprocess, stdout, stderr } = await cmdStream(['cat', devicePath]);
+    const { subprocess, stdout } = serialStream(devicePath);
 
     // await this.#checkDevice(stderr);
 
     this._deviceSubprocess = subprocess;
     this._deviceStdout = stdout;
-    this._deviceStderr = stderr;
 
     this._readDeviceLoop();
   }
@@ -211,7 +202,7 @@ export default class Serial extends GObject.Object {
 
         this.#connect().catch((err) => {
           this.#updateDeviceStatus(serialDeviceStatuses.ERROR);
-          console.debug(err);
+          console.warn(err);
           this.error = _('Failed to connect');
 
           this._reconnect();
@@ -239,12 +230,13 @@ export default class Serial extends GObject.Object {
             throw new Error('Input stream is missing');
           }
 
-          const [line] = stream.read_line_finish_utf8(res);
+          let [line] = stream.read_line_finish_utf8(res);
 
           if (line === null) {
             throw new Error('Failed to read device');
           }
 
+          line = line.trim();
           if (line) {
             this.#pushToOutput(line);
           }
@@ -268,7 +260,7 @@ export default class Serial extends GObject.Object {
 
           this.#updateDeviceStatus(serialDeviceStatuses.ERROR);
           this.error = _('Failed to read device');
-          console.debug(err);
+          console.warn(err);
 
           this._reconnect();
         } finally {
@@ -315,6 +307,16 @@ export default class Serial extends GObject.Object {
           path,
           status: serialDeviceStatuses.UNKNOWN
         });
+      }
+    }
+
+    if (
+      this.#detectedDevices.every(
+        (device) => device.status === serialDeviceStatuses.ERROR
+      )
+    ) {
+      for (const device of this.#detectedDevices) {
+        device.status = serialDeviceStatuses.UNKNOWN;
       }
     }
 

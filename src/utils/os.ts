@@ -4,6 +4,9 @@ import GLib from 'gi://GLib';
 import { osPaths } from '../constants.js';
 
 Gio._promisify(Gio.Subprocess.prototype, 'communicate_utf8_async');
+Gio._promisify(Gio.File.prototype, 'query_info_async');
+Gio._promisify(Gio.File.prototype, 'enumerate_children_async');
+Gio._promisify(Gio.FileEnumerator.prototype, 'next_files_async');
 
 export async function cmd(argv: string[]): Promise<string> {
   const subprocess = Gio.Subprocess.new(
@@ -25,53 +28,79 @@ export async function cmd(argv: string[]): Promise<string> {
 type CmdStreamResult = {
   subprocess: Gio.Subprocess;
   stdout: Gio.DataInputStream;
-  stderr: Gio.DataInputStream;
 };
-export async function cmdStream(argv: string[]): Promise<CmdStreamResult> {
-  const subprocess = Gio.Subprocess.new(
-    argv,
-    Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_PIPE
-  );
+export function cmdStream(argv: string[]): CmdStreamResult {
+  const subprocess = Gio.Subprocess.new(argv, Gio.SubprocessFlags.STDOUT_PIPE);
 
   const stdout = new Gio.DataInputStream({
     base_stream: subprocess.get_stdout_pipe()!,
     close_base_stream: true
   });
 
-  const stderr = new Gio.DataInputStream({
-    base_stream: subprocess.get_stderr_pipe()!,
-    close_base_stream: true
-  });
-
   return {
     subprocess,
-    stdout,
-    stderr
+    stdout
   };
 }
 
-export function resolvePath(...segments: string[]) {
-  const startingPoint = segments[0].startsWith('/')
-    ? segments[0]
-    : GLib.get_current_dir();
+export function serialStream(devicePath: string): CmdStreamResult {
+  if (!GLib.file_test(devicePath, GLib.FileTest.EXISTS)) {
+    throw new Error(`Device ${devicePath} does not exist`);
+  }
 
-  const fullPath = GLib.build_filenamev([startingPoint, ...segments.slice(1)]);
+  const file = Gio.File.new_for_path(devicePath);
+  const info = file.query_info(
+    'access::can-read',
+    Gio.FileQueryInfoFlags.NONE,
+    null
+  );
 
-  const file = Gio.File.new_for_path(fullPath);
-  const canonicalPath = file.resolve_relative_path('.').get_path();
+  if (!info.get_attribute_boolean('access::can-read')) {
+    throw new Error(`Device ${devicePath} is not readable`);
+  }
 
-  return canonicalPath as string;
+  return cmdStream(['cat', devicePath]);
 }
 
 export async function detectSerialDevices(): Promise<string[]> {
-  const resultString = await cmd(['ls', '-l', osPaths.SERIAL_DIRECTORY]);
+  if (!GLib.file_test(osPaths.SERIAL_DIRECTORY, GLib.FileTest.EXISTS)) {
+    return [];
+  }
 
-  return resultString
-    .split('\n')
-    .slice(1, resultString.length)
-    .map((lsEntries) => {
-      const parts = lsEntries.split(' ');
+  const baseDir = Gio.File.new_for_path(osPaths.SERIAL_DIRECTORY);
 
-      return resolvePath(osPaths.SERIAL_DIRECTORY, parts[parts.length - 1]);
-    });
+  const enumerator = (await baseDir.enumerate_children_async(
+    'standard::name,standard::type,standard::symlink-target',
+    Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS,
+    GLib.PRIORITY_DEFAULT,
+    null
+  )) as unknown as Gio.FileEnumerator;
+
+  const devices: string[] = [];
+  while (true) {
+    const files = (await enumerator.next_files_async(
+      10,
+      GLib.PRIORITY_DEFAULT,
+      null
+    )) as unknown as Gio.FileInfo[];
+
+    if (files.length === 0) break;
+
+    for (const fileInfo of files) {
+      const name = fileInfo.get_name();
+      const fileType = fileInfo.get_file_type();
+
+      const relativePath =
+        fileType === Gio.FileType.SYMBOLIC_LINK
+          ? fileInfo.get_symlink_target()
+          : name;
+
+      const resolvedFile = baseDir.resolve_relative_path(
+        relativePath as string
+      );
+      devices.push(resolvedFile.get_path() as string);
+    }
+  }
+
+  return devices;
 }
