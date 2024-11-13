@@ -2,7 +2,8 @@ export const settingsKeys = {
   SERIAL_ENABLED: 'serial-enabled',
   DEVICE_PATH: 'device-path',
   DEVICE_AUTO_DETECT: 'device-auto-detect',
-  DEVICE_AUTO_RECONNECT: 'device-auto-reconnect'
+  DEVICE_AUTO_RECONNECT: 'device-auto-reconnect',
+  SLIDERS: 'sliders'
 };
 
 export const stateKeys = {

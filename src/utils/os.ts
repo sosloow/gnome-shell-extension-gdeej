@@ -104,3 +104,15 @@ export async function detectSerialDevices(): Promise<string[]> {
 
   return devices;
 }
+
+export async function isSteamGame(appName: string) {
+  const escapedName = appName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  const result = await cmd([
+    'sh',
+    '-c',
+    `ps -u $USER -o command | grep -i 'steam.*${escapedName}' | grep -v grep | wc -l`
+  ]);
+
+  return Number(result) > 0;
+}

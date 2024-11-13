@@ -13,6 +13,8 @@ type serialDevice = {
   status: serialDeviceStatuses;
 };
 
+type SerialListener = (data: string) => void;
+
 Gio._promisify(Gio.DataInputStream.prototype, 'close_async');
 
 export default class Serial extends GObject.Object {
@@ -53,6 +55,7 @@ export default class Serial extends GObject.Object {
   _settingsHandlerId?: number;
 
   _bindings: GObject.Binding[] = [];
+  _listeners: SerialListener[] = [];
 
   constructor() {
     super();
@@ -70,8 +73,7 @@ export default class Serial extends GObject.Object {
   _init() {
     super._init();
 
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
+    // @ts-expect-error connectObject
     this._settingsHandlerId = settings.connectObject(
       `changed::${settingsKeys.SERIAL_ENABLED}`,
       () =>
@@ -149,6 +151,10 @@ export default class Serial extends GObject.Object {
     this.enabled = false;
 
     return this._disconnect();
+  }
+
+  async addListener(listener: SerialListener) {
+    this._listeners.push(listener);
   }
 
   async _disconnect() {
@@ -275,18 +281,14 @@ export default class Serial extends GObject.Object {
   #pushToOutput(line: string) {
     this.output = line;
 
-    this.#validateInput(line);
-
     this.#outputBuffer.push(line);
 
     while (this.#outputBuffer.length > Serial.OUTPUT_BUFFER_LIMIT) {
       this.#outputBuffer.shift();
     }
-  }
 
-  #validateInput(line: string) {
-    if (!Serial.INPUT_REGEXP.test(line)) {
-      throw new Error('Invalid input data');
+    for (const listener of this._listeners) {
+      listener(line);
     }
   }
 

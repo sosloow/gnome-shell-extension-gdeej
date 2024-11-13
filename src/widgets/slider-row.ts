@@ -41,8 +41,9 @@ export default class DeejSliderRow extends Adw.PreferencesRow {
     this._dropdownTarget.set_model(this._dropdownOptions);
 
     const defaultSliderTargets = {
-      MASTER: _('Master'),
+      SYSTEM: _('System'),
       MIC: _('Microphone'),
+      STEAM: _('Steam'),
       CUSTOM_APP: _('Application')
     };
 

@@ -9,6 +9,7 @@ import {
 import * as QuickSettings from 'resource:///org/gnome/shell/ui/quickSettings.js';
 
 import Serial from './serial.js';
+import VolumeControl from './volume-control.js';
 import State from './utils/state.js';
 import { getIcon } from './utils/misc.js';
 
@@ -66,16 +67,19 @@ GObject.registerClass(DeejToggle);
 
 class DeejIndicator extends QuickSettings.SystemIndicator {
   _toggle?: DeejToggle;
+  _volumeControl?: VolumeControl;
 
   _init() {
     super._init();
 
     this._toggle = new DeejToggle();
+    this._volumeControl = new VolumeControl();
     this.quickSettingsItems.push(this._toggle);
   }
 
   destroy() {
     this.quickSettingsItems.forEach((item) => item.destroy());
+    this._volumeControl!.destroy();
 
     super.destroy();
   }
@@ -84,13 +88,8 @@ GObject.registerClass(DeejIndicator);
 
 export class Deej {
   _indicator?: DeejIndicator;
-  serial?: Serial;
   _notificationHandlerId?: number;
   _icon?: Gio.Icon;
-
-  constructor() {
-    this.serial = new Serial();
-  }
 
   init() {
     this._indicator = new DeejIndicator();
@@ -126,9 +125,6 @@ export class Deej {
     this._indicator = null!;
     this._icon = null!;
 
-    this.serial?.destroy();
-    this.serial = null!;
-
     state.disconnect(this._notificationHandlerId!);
     this._notificationHandlerId = null!;
   }
@@ -137,6 +133,7 @@ export class Deej {
 export let extension: DeejExtension;
 export let settings: Gio.Settings;
 export let state: State;
+export let serial: Serial;
 export default class DeejExtension extends Extension {
   deej?: Deej;
 
@@ -144,6 +141,7 @@ export default class DeejExtension extends Extension {
     extension = this!;
     settings = this.getSettings();
     state = new State();
+    serial = new Serial();
 
     this.deej = new Deej();
     this.deej.init();
@@ -151,6 +149,9 @@ export default class DeejExtension extends Extension {
   disable() {
     this.deej?.destroy();
     this.deej = null!;
+
+    serial.destroy();
+    serial = null!;
 
     state = null!;
 

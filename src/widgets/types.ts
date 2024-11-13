@@ -1,7 +1,8 @@
 export enum SliderTarget {
-  MASTER = 0,
+  SYSTEM = 0,
   MIC = 1,
-  CUSTOM_APP = 2
+  STEAM = 2,
+  CUSTOM_APP = 3
 }
 
 export type SliderSettings = {

@@ -110,7 +110,7 @@ export default class GnomeRectanglePreferences extends ExtensionPreferences {
 
       sliders.push(
         sliderToVariant({
-          target: SliderTarget.MASTER,
+          target: SliderTarget.SYSTEM,
           'custom-app': '',
           inverted: false
         })
