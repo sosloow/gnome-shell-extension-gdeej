@@ -9,14 +9,13 @@ import { isSteamGame } from './utils/os.js';
 import { settingsKeys } from './constants.js';
 
 interface Slider extends SliderSettings {
+  value: number;
   level: number;
   streams: Set<Gvc.MixerStream>;
 }
 
 export default class VolumeControl extends GObject.Object {
   static delimeter = '|';
-  static max = 1024;
-  static min = 0;
 
   private _control = new Gvc.MixerControl({
     name: 'Deej Volume Control'
@@ -54,16 +53,17 @@ export default class VolumeControl extends GObject.Object {
     const values = data.split(VolumeControl.delimeter);
 
     for (let i = 0; i < values.length; i++) {
-      const level = Number(values[i]);
+      const value = Number(values[i]);
       const slider = this._sliders[i];
 
-      if (Number.isNaN(level) || !slider || slider.level === level) {
+      if (Number.isNaN(value) || !slider || slider.value === value) {
         continue;
       }
 
-      this.setVolume(slider, Math.round((level / VolumeControl.max) * 100));
+      slider.value = value;
+      slider.level = getSliderLevel(slider, value);
 
-      slider.level = level;
+      this.setVolume(slider, slider.level);
     }
   }
 
@@ -103,7 +103,10 @@ export default class VolumeControl extends GObject.Object {
       );
     });
     this._control.connect('default-source-changed', () => {
-      this._setSliderStream(SliderTarget.MIC, this._control.get_default_sink());
+      this._setSliderStream(
+        SliderTarget.MIC,
+        this._control.get_default_source()
+      );
     });
 
     this._control.open();
@@ -131,7 +134,7 @@ export default class VolumeControl extends GObject.Object {
     for (const slider of this._sliders) {
       if (
         slider.target === SliderTarget.CUSTOM_APP &&
-        name.toLowerCase().includes(slider['custom-app'].toLowerCase())
+        name.toLowerCase().includes(slider.customApp.toLowerCase())
       ) {
         slider.streams.add(stream);
       }
@@ -175,16 +178,17 @@ export default class VolumeControl extends GObject.Object {
         (oldSlider) =>
           oldSlider.target === slider.target &&
           (oldSlider.target !== SliderTarget.CUSTOM_APP ||
-            oldSlider['custom-app'] === slider['custom-app'])
+            oldSlider.customApp === slider.customApp)
       );
 
       const streams =
         oldSlider?.streams ??
-        this._getStreamsByTarget(slider.target, slider['custom-app']);
+        this._getStreamsByTarget(slider.target, slider.customApp);
 
       return {
         ...slider,
         level: oldSlider?.level ?? 0,
+        value: oldSlider?.value ?? 0,
         streams
       };
     });
@@ -225,3 +229,14 @@ export default class VolumeControl extends GObject.Object {
   }
 }
 GObject.registerClass(VolumeControl);
+
+function getSliderLevel(slider: Slider, value: number) {
+  if (slider.inverted) {
+    value = Math.abs(value - slider.max);
+  }
+
+  value = Math.max(value - slider.min, 0);
+  value = Math.min(value, slider.max);
+
+  return Math.round((value / Math.abs(slider.max - slider.min)) * 100);
+}

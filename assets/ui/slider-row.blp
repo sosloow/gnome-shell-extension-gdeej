@@ -5,12 +5,12 @@ template $DeejSliderRow: Adw.PreferencesRow {
     Box {
         orientation: vertical;
 
-        Box main-row {
+        Box {
             spacing: 12;
             margin-start: 12;
             margin-end: 12;
             margin-top: 12;
-            margin-bottom: 6;
+            margin-bottom: 12;
 
             Label label-title {
                 label: _("Slider");
@@ -21,6 +21,30 @@ template $DeejSliderRow: Adw.PreferencesRow {
                 styles [
                     "heading"
                 ]
+            }
+
+            Label {
+                label: _('Min/Max:');
+            }
+
+            Box {
+                styles [
+                    "linked"
+                ]
+
+                Entry entry-min {
+                    valign: center;
+                    width-chars: 4;
+                    max-width-chars: 4;
+                    input-purpose: number;
+                }
+
+                Entry entry-max {
+                    valign: center;
+                    width-chars: 4;
+                    max-width-chars: 4;
+                    input-purpose: number;
+                }
             }
 
             Label {
@@ -41,7 +65,15 @@ template $DeejSliderRow: Adw.PreferencesRow {
             }
         }
 
-        Box controls-row {
+        // Box {
+        //     spacing: 6;
+        //     margin-start: 12;
+        //     margin-end: 12;
+        //     margin-bottom: 6;
+        //     orientation: horizontal;
+        //     valign: center;
+        // }
+        Box {
             spacing: 12;
             margin-start: 12;
             margin-end: 12;
@@ -50,7 +82,7 @@ template $DeejSliderRow: Adw.PreferencesRow {
             Box {
                 orientation: vertical;
                 spacing: 3;
-                width-request: 200;
+                width-request: 168;
 
                 DropDown dropdown-target {
                     valign: center;

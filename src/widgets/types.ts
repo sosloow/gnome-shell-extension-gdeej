@@ -7,6 +7,8 @@ export enum SliderTarget {
 
 export type SliderSettings = {
   target: SliderTarget;
-  'custom-app': string;
+  customApp: string;
   inverted: boolean;
+  min: number;
+  max: number;
 };

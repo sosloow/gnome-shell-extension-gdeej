@@ -41,9 +41,9 @@ export default class Serial extends GObject.Object {
   autoDetect: boolean;
   output?: string;
 
-  #outputBuffer: string[] = [];
+  private _outputBuffer: string[] = [];
 
-  #detectedDevices: serialDevice[] = [];
+  _detectedDevices: serialDevice[] = [];
   _devicePath?: string;
 
   _deviceStdout?: Gio.DataInputStream;
@@ -127,7 +127,7 @@ export default class Serial extends GObject.Object {
     this._reconnect(true).catch((err) => {
       console.warn(err);
 
-      this.#updateDeviceStatus(serialDeviceStatuses.ERROR);
+      this._updateDeviceStatus(serialDeviceStatuses.ERROR);
     });
   }
 
@@ -180,8 +180,8 @@ export default class Serial extends GObject.Object {
     this._deviceStdout = null!;
   }
 
-  async #connect() {
-    const devicePath = await this.#getDevicePath();
+  async _connect() {
+    const devicePath = await this._getDevicePath();
 
     const { subprocess, stdout } = serialStream(devicePath);
 
@@ -206,8 +206,8 @@ export default class Serial extends GObject.Object {
       () => {
         this._reconnectTimeoutId = null!;
 
-        this.#connect().catch((err) => {
-          this.#updateDeviceStatus(serialDeviceStatuses.ERROR);
+        this._connect().catch((err) => {
+          this._updateDeviceStatus(serialDeviceStatuses.ERROR);
           console.warn(err);
           this.error = _('Failed to connect');
 
@@ -244,13 +244,14 @@ export default class Serial extends GObject.Object {
 
           line = line.trim();
           if (line) {
-            this.#pushToOutput(line);
+            this._pushToOutput(line);
           }
 
           if (!this.connected) {
-            this.#updateDeviceStatus(serialDeviceStatuses.ACTIVE);
+            this._updateDeviceStatus(serialDeviceStatuses.ACTIVE);
             this.connected = true;
             this.error = null!;
+            settings.set_string(settingsKeys.DEVICE_PATH, this._devicePath!);
           }
 
           this._readDeviceLoop();
@@ -259,12 +260,12 @@ export default class Serial extends GObject.Object {
             err instanceof Gio.IOErrorEnum &&
             err.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.CANCELLED)
           ) {
-            this.#updateDeviceStatus(serialDeviceStatuses.DISABLED);
+            this._updateDeviceStatus(serialDeviceStatuses.DISABLED);
 
             return;
           }
 
-          this.#updateDeviceStatus(serialDeviceStatuses.ERROR);
+          this._updateDeviceStatus(serialDeviceStatuses.ERROR);
           this.error = _('Failed to read device');
           console.warn(err);
 
@@ -278,13 +279,13 @@ export default class Serial extends GObject.Object {
     );
   }
 
-  #pushToOutput(line: string) {
+  _pushToOutput(line: string) {
     this.output = line;
 
-    this.#outputBuffer.push(line);
+    this._outputBuffer.push(line);
 
-    while (this.#outputBuffer.length > Serial.OUTPUT_BUFFER_LIMIT) {
-      this.#outputBuffer.shift();
+    while (this._outputBuffer.length > Serial.OUTPUT_BUFFER_LIMIT) {
+      this._outputBuffer.shift();
     }
 
     for (const listener of this._listeners) {
@@ -292,7 +293,7 @@ export default class Serial extends GObject.Object {
     }
   }
 
-  async #getDevicePath(): Promise<string> {
+  async _getDevicePath(): Promise<string> {
     if (!this.autoDetect) {
       this._devicePath = settings.get_string(settingsKeys.DEVICE_PATH);
       return this._devicePath;
@@ -301,11 +302,11 @@ export default class Serial extends GObject.Object {
     const devicePaths = await detectSerialDevices();
 
     for (const path of devicePaths) {
-      const existingDevice = this.#detectedDevices.find(
+      const existingDevice = this._detectedDevices.find(
         ({ path: existingPath }) => existingPath === path
       );
       if (!existingDevice) {
-        this.#detectedDevices.push({
+        this._detectedDevices.push({
           path,
           status: serialDeviceStatuses.UNKNOWN
         });
@@ -313,11 +314,11 @@ export default class Serial extends GObject.Object {
     }
 
     if (
-      this.#detectedDevices.every(
+      this._detectedDevices.every(
         (device) => device.status === serialDeviceStatuses.ERROR
       )
     ) {
-      for (const device of this.#detectedDevices) {
+      for (const device of this._detectedDevices) {
         device.status = serialDeviceStatuses.UNKNOWN;
       }
     }
@@ -325,7 +326,7 @@ export default class Serial extends GObject.Object {
     let device: serialDevice | null = null;
     for (const status of Serial.AUTODETECT_PRIORITY) {
       device =
-        this.#detectedDevices.find((device) => device.status === status) ??
+        this._detectedDevices.find((device) => device.status === status) ??
         null;
 
       if (device) {
@@ -342,8 +343,8 @@ export default class Serial extends GObject.Object {
     return this._devicePath;
   }
 
-  #updateDeviceStatus(status: serialDeviceStatuses) {
-    const device = this.#detectedDevices.find(
+  _updateDeviceStatus(status: serialDeviceStatuses) {
+    const device = this._detectedDevices.find(
       ({ path }) => path === this._devicePath
     );
 

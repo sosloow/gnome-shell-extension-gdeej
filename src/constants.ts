@@ -21,3 +21,6 @@ export enum serialDeviceStatuses {
   UNKNOWN = 'unknown',
   ERROR = 'error'
 }
+
+export const SLIDER_MIN_VALUE = 0;
+export const SLIDER_MAX_VALUE = 1024;

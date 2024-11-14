@@ -8,9 +8,13 @@ import { ExtensionPreferences } from 'resource:///org/gnome/Shell/Extensions/js/
 import FilePickerRowOrig from './widgets/file-picker-row.js';
 import SliderRowOrig from './widgets/slider-row.js';
 
-import { SliderTarget } from './widgets/types.js';
+import { SliderTarget, SliderSettings } from './widgets/types.js';
 import { sliderToVariant } from './widgets/helpers.js';
-import { settingsKeys } from './constants.js';
+import {
+  settingsKeys,
+  SLIDER_MIN_VALUE,
+  SLIDER_MAX_VALUE
+} from './constants.js';
 
 let FilePickerRow: typeof FilePickerRowOrig;
 let SliderRow: typeof SliderRowOrig;
@@ -26,6 +30,16 @@ export default class GnomeRectanglePreferences extends ExtensionPreferences {
   fillPreferencesWindow(window: Adw.PreferencesWindow) {
     const resourcePath = GLib.build_filenamev([this.path, 'deej.gresource']);
     Gio.resources_register(Gio.resource_load(resourcePath));
+
+    const cssProvider = new Gtk.CssProvider();
+    cssProvider.load_from_resource(
+      '/org/gnome/shell/extensions/deej/css/stylesheet.css'
+    );
+    Gtk.StyleContext.add_provider_for_display(
+      window.get_display(),
+      cssProvider,
+      Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+    );
 
     this._settings = this.getSettings();
 
@@ -68,11 +82,13 @@ export default class GnomeRectanglePreferences extends ExtensionPreferences {
           },
 
           InternalChildren: [
-            'entry-custom-app',
+            // 'entry-custom-app',
             'switch-invert',
             'btn-remove',
             'dropdown-target',
-            'label-title'
+            'label-title',
+            'entry-min',
+            'entry-max'
           ],
 
           Signals: {
@@ -108,11 +124,17 @@ export default class GnomeRectanglePreferences extends ExtensionPreferences {
     addButton.connect('clicked', () => {
       const sliders = this._getSliders();
 
+      const lastSlider: Partial<SliderSettings> = sliders[sliders.length - 1]
+        ? sliders[sliders.length - 1].recursiveUnpack()
+        : {};
+
       sliders.push(
         sliderToVariant({
-          target: SliderTarget.SYSTEM,
-          'custom-app': '',
-          inverted: false
+          target: SliderTarget.CUSTOM_APP,
+          customApp: '',
+          inverted: lastSlider.inverted ?? false,
+          min: lastSlider.min ?? SLIDER_MIN_VALUE,
+          max: lastSlider.max ?? SLIDER_MAX_VALUE
         })
       );
       this._saveSliders(sliders);
@@ -139,6 +161,7 @@ export default class GnomeRectanglePreferences extends ExtensionPreferences {
     let slider = this._listBoxSliders!.get_first_child() as SliderRowOrig;
 
     while (slider) {
+      slider.destroy();
       this._listBoxSliders!.remove(slider);
 
       slider = this._listBoxSliders!.get_first_child() as SliderRowOrig;
@@ -186,7 +209,7 @@ export default class GnomeRectanglePreferences extends ExtensionPreferences {
     this._bindSetting(
       settingsKeys.DEVICE_AUTO_DETECT,
       'entry-device-path',
-      'visible',
+      'sensitive',
       Gio.SettingsBindFlags.INVERT_BOOLEAN
     );
     this._bindSetting(settingsKeys.DEVICE_PATH, 'entry-device-path', 'text');

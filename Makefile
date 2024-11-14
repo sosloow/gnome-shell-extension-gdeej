@@ -37,7 +37,7 @@ dist/schemas: schemas/gschemas.compiled | dist
 	rm -rf $@
 	cp -r schemas $@
 
-dist/assets: | dist
+dist/assets: assets/css/stylesheet.css | dist
 	mkdir -p dist/assets
 	cp -r assets/* dist/assets/
 	rm -rf dist/assets/ui
