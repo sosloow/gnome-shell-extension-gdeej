@@ -79,7 +79,7 @@ class DeejIndicator extends QuickSettings.SystemIndicator {
 
   destroy() {
     this.quickSettingsItems.forEach((item) => item.destroy());
-    this._volumeControl!.destroy();
+    this._volumeControl?.destroy();
 
     super.destroy();
   }

@@ -1,0 +1,39 @@
+using Gtk 4.0;
+using Adw 1;
+translation-domain "deej@kareraisu.me";
+
+template $AppChooser: Adw.Window {
+    title: _("Select app");
+    modal: true;
+    resizable: false;
+    default-width: 300;
+    default-height: 600;
+    hide-on-close: true;
+
+    Adw.ToolbarView {
+        [top]
+        Adw.HeaderBar {
+            decoration-layout: "";
+
+            [start]
+            Button btn-cancel {
+                label: _("Cancel");
+            }
+
+            [end]
+            Button btn-select {
+                label: _("Select");
+
+                styles [
+                    "suggested-action"
+                ]
+            }
+        }
+
+        ScrolledWindow {
+            ListBox list-box {
+                selection-mode: single;
+            }
+        }
+    }
+}

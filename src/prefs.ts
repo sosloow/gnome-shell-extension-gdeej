@@ -7,6 +7,7 @@ import { ExtensionPreferences } from 'resource:///org/gnome/Shell/Extensions/js/
 
 import FilePickerRowOrig from './widgets/file-picker-row.js';
 import SliderRowOrig from './widgets/slider-row.js';
+import AppChooserOrig from './widgets/app-chooser.js';
 
 import { SliderTarget, SliderSettings } from './widgets/types.js';
 import { sliderToVariant } from './widgets/helpers.js';
@@ -18,6 +19,7 @@ import {
 
 let FilePickerRow: typeof FilePickerRowOrig;
 let SliderRow: typeof SliderRowOrig;
+let AppChooser: typeof AppChooserOrig;
 
 export default class GnomeRectanglePreferences extends ExtensionPreferences {
   private _settings?: Gio.Settings;
@@ -82,7 +84,8 @@ export default class GnomeRectanglePreferences extends ExtensionPreferences {
           },
 
           InternalChildren: [
-            // 'entry-custom-app',
+            'entry-custom-app',
+            'btn-app-chooser',
             'switch-invert',
             'btn-remove',
             'dropdown-target',
@@ -99,6 +102,18 @@ export default class GnomeRectanglePreferences extends ExtensionPreferences {
           }
         },
         SliderRowOrig
+      );
+    }
+
+    if (AppChooser == null) {
+      AppChooser = GObject.registerClass(
+        {
+          GTypeName: 'AppChooser',
+          Template:
+            'resource:///org/gnome/shell/extensions/deej/ui/app-chooser.ui',
+          InternalChildren: ['list-box', 'btn-select', 'btn-cancel']
+        },
+        AppChooserOrig
       );
     }
 

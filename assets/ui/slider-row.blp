@@ -103,39 +103,21 @@ template $DeejSliderRow: Adw.PreferencesRow {
                 orientation: vertical;
                 spacing: 3;
                 hexpand: true;
-                sensitive: false;
-                // Button btn-app-picker {
-                //     Box {
-                //         spacing: 8;
-                //         margin-start: 8;
-                //         margin-end: 8;
-                //         margin-top: 3;
-                //         margin-bottom: 3;
-                //         Image app-icon {
-                //             icon-name: "firefox-symbolic";
-                //             pixel-size: 10;
-                //         }
-                //         Label app-name {
-                //             label: "Firefox";
-                //             ellipsize: end;
-                //         }
-                //     }
-                // }
-                Button btn-app-picker {
-                    Box {
-                        spacing: 8;
-                        margin-start: 8;
-                        margin-end: 8;
+                // sensitive: false;
+                Box {
+                    styles [
+                        "linked"
+                    ]
 
-                        Image {
-                            icon-name: "application-x-executable-symbolic";
-                            pixel-size: 12;
-                        }
+                    Entry entry-custom-app {
+                        hexpand: true;
+                        placeholder-text: _("Choose Application...");
+                    }
 
-                        Label label-app {
-                            label: _("Choose Application...");
-                            ellipsize: end;
-                        }
+                    Button btn-app-chooser {
+                        icon-name: "application-x-executable-symbolic";
+                        width-request: 15;
+                        height-request: 15;
                     }
                 }
 

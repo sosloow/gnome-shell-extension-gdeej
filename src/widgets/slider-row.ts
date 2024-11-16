@@ -7,6 +7,7 @@ import { gettext as _ } from 'resource:///org/gnome/Shell/Extensions/js/extensio
 import { SliderSettings, SliderTarget } from './types.js';
 import { sliderToVariant } from './helpers.js';
 import { SLIDER_MIN_VALUE, SLIDER_MAX_VALUE } from '../constants.js';
+import AppChooser from './app-chooser.js';
 
 interface SliderRowConstructorProps
   extends Adw.PreferencesRow.ConstructorProps {
@@ -15,12 +16,16 @@ interface SliderRowConstructorProps
 export default class DeejSliderRow extends Adw.PreferencesRow {
   private static readonly DEBOUNCE_TIMEOUT_MS = 1000;
 
+  private _btnAppChooser: Gtk.Button;
+  private _entryCustomApp: Gtk.Entry;
+  private _appChooser: AppChooser;
   private _switchInvert: Gtk.Switch;
   private _removeButton: Gtk.Button;
   private _dropdownTarget: Gtk.DropDown;
   private _dropdownOptions: Gtk.StringList;
   private _entryMin: Gtk.Entry;
   private _entryMax: Gtk.Entry;
+
   private _debounceTimeoutId: number | null = null;
 
   sliderIndex: number;
@@ -43,6 +48,12 @@ export default class DeejSliderRow extends Adw.PreferencesRow {
     this._entryMin = this._entry_min as Gtk.Entry;
     // @ts-expect-error Typescript doesn't know about the internal children
     this._entryMax = this._entry_max as Gtk.Entry;
+    // @ts-expect-error Typescript doesn't know about the internal children
+    this._btnAppChooser = this._btn_app_chooser as Gtk.Button;
+    // @ts-expect-error Typescript doesn't know about the internal children
+    this._entryCustomApp = this._entry_custom_app as Gtk.Entry;
+
+    this._appChooser = new AppChooser();
 
     labelTitle.label = _('Slider') + ' ' + (this.sliderIndex + 1);
 
@@ -104,8 +115,18 @@ export default class DeejSliderRow extends Adw.PreferencesRow {
         return GLib.SOURCE_REMOVE;
       });
     });
+    this._entryCustomApp.connect('changed', () => {
+      this._onConfigChanged();
+    });
+
     this._removeButton.connect('clicked', () => {
       this.emit('removed');
+    });
+    this._btnAppChooser.connect('clicked', async () => {
+      const appId = await this._appChooser.showChooser().catch(console.warn);
+      if (appId == null) return;
+
+      this._entryCustomApp.text = appId;
     });
   }
 
@@ -120,12 +141,15 @@ export default class DeejSliderRow extends Adw.PreferencesRow {
     this._switchInvert.set_active(unpacked.inverted ?? false);
     this._entryMin.set_text(String(unpacked.min));
     this._entryMax.set_text(String(unpacked.max));
+    this._entryCustomApp.text = unpacked.customApp;
+
+    this._updateView();
   }
 
   get sliderConfig() {
     return sliderToVariant({
       target: this._dropdownTarget.get_selected(),
-      customApp: '',
+      customApp: this._entryCustomApp.get_text(),
       inverted: this._switchInvert.get_active(),
       min: Number(this._entryMin.get_text()) || SLIDER_MIN_VALUE,
       max: Number(this._entryMax.get_text()) || SLIDER_MAX_VALUE
@@ -133,6 +157,8 @@ export default class DeejSliderRow extends Adw.PreferencesRow {
   }
 
   _onConfigChanged() {
+    this._updateView();
+
     if (this._debounceTimeoutId !== null) {
       GLib.source_remove(this._debounceTimeoutId);
 
@@ -150,6 +176,14 @@ export default class DeejSliderRow extends Adw.PreferencesRow {
         return GLib.SOURCE_REMOVE;
       }
     );
+  }
+
+  private _updateView() {
+    if (this._dropdownTarget.get_selected() === SliderTarget.CUSTOM_APP) {
+      this._entryCustomApp.get_parent()!.get_parent()!.visible = true;
+    } else {
+      this._entryCustomApp.get_parent()!.get_parent()!.visible = false;
+    }
   }
 
   destroy(): void {

@@ -22,6 +22,7 @@ export default class VolumeControl extends GObject.Object {
   });
   private _streams: Map<string, Set<Gvc.MixerStream>> = new Map();
   private _sliders: Slider[] = [];
+  private _settingsHandlerId: number;
 
   constructor() {
     super();
@@ -47,6 +48,8 @@ export default class VolumeControl extends GObject.Object {
     }
 
     this._control = null!;
+
+    settings.disconnect(this._settingsHandlerId);
   }
 
   _onData(data: string) {
@@ -181,9 +184,9 @@ export default class VolumeControl extends GObject.Object {
             oldSlider.customApp === slider.customApp)
       );
 
-      const streams =
-        oldSlider?.streams ??
-        this._getStreamsByTarget(slider.target, slider.customApp);
+      const streams = oldSlider
+        ? new Set(oldSlider.streams)
+        : this._getStreamsByTarget(slider.target, slider.customApp);
 
       return {
         ...slider,
