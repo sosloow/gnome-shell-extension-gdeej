@@ -15,8 +15,6 @@ interface Slider extends SliderSettings {
 }
 
 export default class VolumeControl extends GObject.Object {
-  static delimeter = '|';
-
   private _control = new Gvc.MixerControl({
     name: 'Deej Volume Control'
   });
@@ -52,9 +50,7 @@ export default class VolumeControl extends GObject.Object {
     settings.disconnect(this._settingsHandlerId);
   }
 
-  _onData(data: string) {
-    const values = data.split(VolumeControl.delimeter);
-
+  _onData(values: string[]) {
     for (let i = 0; i < values.length; i++) {
       const value = Number(values[i]);
       const slider = this._sliders[i];

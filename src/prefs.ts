@@ -9,6 +9,7 @@ import FilePickerRowOrig from './widgets/file-picker-row.js';
 import SliderRowOrig from './widgets/slider-row.js';
 import AppChooserOrig from './widgets/app-chooser.js';
 
+import { listSocatBaudRates } from './utils/os.js';
 import { SliderTarget, SliderSettings } from './widgets/types.js';
 import { sliderToVariant } from './widgets/helpers.js';
 import {
@@ -124,11 +125,44 @@ export default class GnomeRectanglePreferences extends ExtensionPreferences {
     this._generalPage = this._builder.get_object('page-general');
     this._slidersPage = this._builder.get_object('page-sliders');
 
+    this._fillGeneralPage();
     this._fillSlidersPage();
     this._bindSettings();
 
     window.add(this._generalPage);
     window.add(this._slidersPage);
+  }
+
+  private _fillGeneralPage() {
+    const comboRowBaudRate = this._builder!.get_object(
+      'combo-row-baud-rate'
+    ) as Adw.ComboRow;
+
+    const comboRowOptions = new Gtk.StringList();
+
+    comboRowBaudRate.set_model(comboRowOptions);
+
+    const currentBaudRate = this._settings!.get_string(
+      settingsKeys.DEVICE_BAUD_RATE
+    );
+
+    listSocatBaudRates()
+      .then((rates) => {
+        for (const rate of rates) {
+          comboRowOptions.append(rate);
+        }
+
+        comboRowBaudRate.selected = rates.indexOf(currentBaudRate);
+
+        comboRowBaudRate.connect('notify::selected', () => {
+          this._settings!.set_string(
+            settingsKeys.DEVICE_BAUD_RATE,
+            // @ts-expect-error get_string() exists
+            comboRowBaudRate.get_selected_item().get_string()
+          );
+        });
+      })
+      .catch(console.warn);
   }
 
   private _fillSlidersPage() {

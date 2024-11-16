@@ -13,21 +13,22 @@ type serialDevice = {
   status: serialDeviceStatuses;
 };
 
-type SerialListener = (data: string) => void;
+type SerialListener = (data: string[]) => void;
 
-Gio._promisify(Gio.DataInputStream.prototype, 'close_async');
+Gio._promisify(Gio.InputStream.prototype, 'close_async');
 
 export default class Serial extends GObject.Object {
   static OUTPUT_BUFFER_LIMIT = 10;
   static RECONNECT_TIMEOUT_SECONDS = 1;
   static CONNECTION_CHECK_TIMEOUT = 200;
+  static READ_BYTES_LENGTH = 1024;
+  static DELIMITER = '|';
   static AUTODETECT_PRIORITY = [
     serialDeviceStatuses.ACTIVE,
     serialDeviceStatuses.DISABLED,
     serialDeviceStatuses.UNKNOWN,
     serialDeviceStatuses.ERROR
   ];
-  static INPUT_REGEXP = /(\d+\|?)+/;
 
   enabled: boolean;
   @notify()
@@ -39,14 +40,16 @@ export default class Serial extends GObject.Object {
 
   autoReconnect: boolean;
   autoDetect: boolean;
-  output?: string;
+  baudRate: string;
+  output?: string[];
 
-  private _outputBuffer: string[] = [];
+  private _outputBuffer: string[][] = [];
 
   _detectedDevices: serialDevice[] = [];
   _devicePath?: string;
 
   _deviceStdout?: Gio.DataInputStream;
+  _deviceStderr?: Gio.DataInputStream;
   _deviceSubprocess?: Gio.Subprocess;
 
   _readDeviceLoopCancellable?: Gio.Cancellable;
@@ -68,6 +71,7 @@ export default class Serial extends GObject.Object {
       settingsKeys.DEVICE_AUTO_RECONNECT
     );
     this.autoDetect = settings.get_boolean(settingsKeys.DEVICE_AUTO_DETECT);
+    this.baudRate = settings.get_string(settingsKeys.DEVICE_BAUD_RATE);
   }
 
   _init() {
@@ -95,6 +99,12 @@ export default class Serial extends GObject.Object {
       `changed::${settingsKeys.DEVICE_AUTO_DETECT}`,
       () => {
         this.autoDetect = settings.get_boolean(settingsKeys.DEVICE_AUTO_DETECT);
+
+        this._reconnect(true);
+      },
+      `changed::${settingsKeys.DEVICE_AUTO_DETECT}`,
+      () => {
+        this.baudRate = settings.get_string(settingsKeys.DEVICE_BAUD_RATE);
 
         this._reconnect(true);
       },
@@ -178,19 +188,29 @@ export default class Serial extends GObject.Object {
       console.warn(err);
     }
     this._deviceStdout = null!;
+
+    try {
+      this._readDeviceLoopCancellable?.cancel();
+      await this._deviceStderr?.close_async(GLib.PRIORITY_DEFAULT, null);
+    } catch (err) {
+      console.warn(err);
+    }
+    this._deviceStdout = null!;
   }
 
   async _connect() {
     const devicePath = await this._getDevicePath();
 
-    const { subprocess, stdout } = serialStream(devicePath);
-
-    // await this.#checkDevice(stderr);
+    const { subprocess, stdout, stderr } = serialStream(
+      devicePath,
+      this.baudRate
+    );
 
     this._deviceSubprocess = subprocess;
     this._deviceStdout = stdout;
+    this._deviceStderr = stderr;
 
-    this._readDeviceLoop();
+    return this._readDeviceLoop();
   }
 
   async _reconnect(force = false) {
@@ -233,18 +253,19 @@ export default class Serial extends GObject.Object {
       (stream, res) => {
         try {
           if (!stream) {
-            throw new Error('Input stream is missing');
-          }
-
-          let [line] = stream.read_line_finish_utf8(res);
-
-          if (line === null) {
             throw new Error('Failed to read device');
           }
 
-          line = line.trim();
-          if (line) {
-            this._pushToOutput(line);
+          const [line] = stream.read_line_finish_utf8(res);
+
+          if (line === null) {
+            return this._checkErrors();
+          }
+
+          const data = this._parseSerialOutput(line);
+
+          if (data.length) {
+            this._pushToOutput(data);
           }
 
           if (!this.connected) {
@@ -279,17 +300,17 @@ export default class Serial extends GObject.Object {
     );
   }
 
-  _pushToOutput(line: string) {
-    this.output = line;
+  _pushToOutput(values: string[]) {
+    this.output = values;
 
-    this._outputBuffer.push(line);
+    this._outputBuffer.push(values);
 
     while (this._outputBuffer.length > Serial.OUTPUT_BUFFER_LIMIT) {
       this._outputBuffer.shift();
     }
 
     for (const listener of this._listeners) {
-      listener(line);
+      listener(this.output);
     }
   }
 
@@ -352,7 +373,47 @@ export default class Serial extends GObject.Object {
       device.status = status;
     }
   }
+
+  private _parseSerialOutput(line: string): string[] {
+    return line
+      .split(Serial.DELIMITER)
+      .filter(Boolean)
+      .map((line) => line.trim());
+  }
+
+  private _checkErrors() {
+    this._deviceStderr?.read_line_async(
+      GLib.PRIORITY_DEFAULT,
+      null,
+      (stream, res) => {
+        try {
+          if (!stream) {
+            throw new Error('Failed to read device');
+          }
+
+          const [line] = stream.read_line_finish_utf8(res);
+
+          if (line) {
+            throw new Error(line);
+          }
+
+          this._readDeviceLoop();
+        } catch (err) {
+          this._updateDeviceStatus(serialDeviceStatuses.ERROR);
+          this.error = _('Failed to read device');
+          console.warn(err);
+
+          this._reconnect();
+        } finally {
+          if (this.initialConnect) {
+            this.initialConnect = false;
+          }
+        }
+      }
+    );
+  }
 }
+
 GObject.registerClass(
   {
     Properties: {

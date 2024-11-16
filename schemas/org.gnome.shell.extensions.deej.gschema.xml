@@ -11,6 +11,11 @@
             <summary>Auto-detect serial device</summary>
             <description></description>
         </key>
+        <key name="device-baud-rate" type="s">
+            <default>"19200"</default>
+            <summary>Baud rate of serial device</summary>
+            <description></description>
+        </key>
         <key name="device-auto-reconnect" type="b">
             <default>true</default>
             <summary>Auto-reconnect serial device</summary>

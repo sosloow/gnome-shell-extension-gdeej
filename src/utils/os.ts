@@ -1,7 +1,7 @@
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 
-import { osPaths } from '../constants.js';
+import { osPaths, DATA_INPUT_STREAM_BUFFER_SIZE } from '../constants.js';
 
 Gio._promisify(Gio.Subprocess.prototype, 'communicate_utf8_async');
 Gio._promisify(Gio.File.prototype, 'query_info_async');
@@ -28,22 +28,39 @@ export async function cmd(argv: string[]): Promise<string> {
 type CmdStreamResult = {
   subprocess: Gio.Subprocess;
   stdout: Gio.DataInputStream;
+  stderr: Gio.DataInputStream;
 };
 export function cmdStream(argv: string[]): CmdStreamResult {
-  const subprocess = Gio.Subprocess.new(argv, Gio.SubprocessFlags.STDOUT_PIPE);
+  const subprocess = Gio.Subprocess.new(
+    argv,
+    Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_PIPE
+  );
 
   const stdout = new Gio.DataInputStream({
     base_stream: subprocess.get_stdout_pipe()!,
-    close_base_stream: true
+    close_base_stream: true,
+    buffer_size: DATA_INPUT_STREAM_BUFFER_SIZE
   });
+  stdout.set_newline_type(Gio.DataStreamNewlineType.ANY);
+
+  const stderr = new Gio.DataInputStream({
+    base_stream: subprocess.get_stderr_pipe()!,
+    close_base_stream: true,
+    buffer_size: DATA_INPUT_STREAM_BUFFER_SIZE
+  });
+  stderr.set_newline_type(Gio.DataStreamNewlineType.ANY);
 
   return {
     subprocess,
-    stdout
+    stdout,
+    stderr
   };
 }
 
-export function serialStream(devicePath: string): CmdStreamResult {
+export function serialStream(
+  devicePath: string,
+  baudRate?: string
+): CmdStreamResult {
   if (!GLib.file_test(devicePath, GLib.FileTest.EXISTS)) {
     throw new Error(`Device ${devicePath} does not exist`);
   }
@@ -59,7 +76,13 @@ export function serialStream(devicePath: string): CmdStreamResult {
     throw new Error(`Device ${devicePath} is not readable`);
   }
 
-  return cmdStream(['cat', devicePath]);
+  let outputParams = `${devicePath},raw,echo=0,crnl`;
+
+  if (baudRate) {
+    outputParams += `,b${baudRate}`;
+  }
+
+  return cmdStream(['socat', '-U', '-', outputParams]);
 }
 
 export async function detectSerialDevices(): Promise<string[]> {
@@ -115,4 +138,22 @@ export async function isSteamGame(appName: string) {
   ]);
 
   return Number(result) > 0;
+}
+
+export async function listSocatBaudRates() {
+  const result = await cmd(['sh', '-c', 'socat -hh | grep b[1-9]']);
+
+  const lines = result.split('\n');
+
+  const baudRates = [];
+
+  for (const line of lines) {
+    const match = line.match(/^\s*b(\d+)/);
+
+    if (match) {
+      baudRates.push(match[1]);
+    }
+  }
+
+  return baudRates.sort((b1, b2) => Number(b1) - Number(b2));
 }
