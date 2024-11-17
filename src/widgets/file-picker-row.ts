@@ -3,7 +3,7 @@ import Adw from 'gi://Adw';
 
 import { gettext as _ } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
-export default class FilePickerRow extends Adw.EntryRow {
+export default class GDeejFilePickerRow extends Adw.EntryRow {
   fileButton: Gtk.Button;
 
   constructor(props = {}) {

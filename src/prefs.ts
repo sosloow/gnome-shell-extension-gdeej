@@ -49,7 +49,7 @@ export default class GnomeRectanglePreferences extends ExtensionPreferences {
     if (!FilePickerRow) {
       FilePickerRow = GObject.registerClass(
         {
-          GTypeName: 'DeejFilePickerRow',
+          GTypeName: 'GDeejFilePickerRow',
           Template:
             'resource:///org/gnome/shell/extensions/gdeej/ui/file-picker-row.ui',
           InternalChildren: ['file-button']
@@ -61,7 +61,7 @@ export default class GnomeRectanglePreferences extends ExtensionPreferences {
     if (!SliderRow) {
       SliderRow = GObject.registerClass(
         {
-          GTypeName: 'DeejSliderRow',
+          GTypeName: 'GDeejSliderRow',
           Template:
             'resource:///org/gnome/shell/extensions/gdeej/ui/slider-row.ui',
           Properties: {
@@ -109,7 +109,7 @@ export default class GnomeRectanglePreferences extends ExtensionPreferences {
     if (AppChooser == null) {
       AppChooser = GObject.registerClass(
         {
-          GTypeName: 'AppChooser',
+          GTypeName: 'GDeejAppChooser',
           Template:
             'resource:///org/gnome/shell/extensions/gdeej/ui/app-chooser.ui',
           InternalChildren: ['list-box', 'btn-select', 'btn-cancel']
@@ -119,7 +119,7 @@ export default class GnomeRectanglePreferences extends ExtensionPreferences {
     }
 
     this._builder = Gtk.Builder.new_from_resource(
-      '/org/gnome/shell/extensions/deej/ui/prefs.ui'
+      '/org/gnome/shell/extensions/gdeej/ui/prefs.ui'
     );
 
     this._generalPage = this._builder.get_object('page-general');

@@ -2,7 +2,7 @@ import GObject from 'gi://GObject';
 
 import { notify } from './decorators.js';
 
-export default class State extends GObject.Object {
+export default class GDeejState extends GObject.Object {
   @notify()
   accessor serialError: string;
   @notify({ changed: true })
@@ -48,5 +48,5 @@ GObject.registerClass(
       }
     }
   },
-  State
+  GDeejState
 );

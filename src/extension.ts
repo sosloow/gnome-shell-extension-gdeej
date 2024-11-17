@@ -15,7 +15,7 @@ import { getIcon } from './utils/misc.js';
 
 import { settingsKeys } from './constants.js';
 
-class DeejToggle extends QuickSettings.QuickMenuToggle {
+class GDeejToggle extends QuickSettings.QuickMenuToggle {
   _errorHandlerId?: number;
   _connectedHandlerId?: number;
 
@@ -63,16 +63,16 @@ class DeejToggle extends QuickSettings.QuickMenuToggle {
     super.destroy();
   }
 }
-GObject.registerClass(DeejToggle);
+GObject.registerClass(GDeejToggle);
 
-class DeejIndicator extends QuickSettings.SystemIndicator {
-  _toggle?: DeejToggle;
+class GDeejIndicator extends QuickSettings.SystemIndicator {
+  _toggle?: GDeejToggle;
   _volumeControl?: VolumeControl;
 
   _init() {
     super._init();
 
-    this._toggle = new DeejToggle();
+    this._toggle = new GDeejToggle();
     this._volumeControl = new VolumeControl();
     this.quickSettingsItems.push(this._toggle);
   }
@@ -84,15 +84,15 @@ class DeejIndicator extends QuickSettings.SystemIndicator {
     super.destroy();
   }
 }
-GObject.registerClass(DeejIndicator);
+GObject.registerClass(GDeejIndicator);
 
-export class Deej {
-  _indicator?: DeejIndicator;
+export class GDeej {
+  _indicator?: GDeejIndicator;
   _notificationHandlerId?: number;
   _icon?: Gio.Icon;
 
   init() {
-    this._indicator = new DeejIndicator();
+    this._indicator = new GDeejIndicator();
     this._icon = getIcon(extension.path, 'deej-logo-symbolic');
 
     // @ts-expect-error addExternalIndicator exists
@@ -129,12 +129,12 @@ export class Deej {
   }
 }
 
-export let extension: DeejExtension;
+export let extension: GDeejExtension;
 export let settings: Gio.Settings;
 export let state: State;
 export let serial: Serial;
-export default class DeejExtension extends Extension {
-  deej?: Deej;
+export default class GDeejExtension extends Extension {
+  gdeej?: GDeej;
 
   enable() {
     extension = this!;
@@ -142,12 +142,12 @@ export default class DeejExtension extends Extension {
     state = new State();
     serial = new Serial();
 
-    this.deej = new Deej();
-    this.deej.init();
+    this.gdeej = new GDeej();
+    this.gdeej.init();
   }
   disable() {
-    this.deej?.destroy();
-    this.deej = null!;
+    this.gdeej?.destroy();
+    this.gdeej = null!;
 
     serial.destroy();
     serial = null!;

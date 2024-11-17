@@ -14,7 +14,7 @@ interface Slider extends SliderSettings {
   streams: Set<Gvc.MixerStream>;
 }
 
-export default class VolumeControl extends GObject.Object {
+export default class GDeejVolumeControl extends GObject.Object {
   private _control = new Gvc.MixerControl({
     name: 'GDeej Volume Control'
   });
@@ -133,6 +133,7 @@ export default class VolumeControl extends GObject.Object {
     for (const slider of this._sliders) {
       if (
         slider.target === SliderTarget.CUSTOM_APP &&
+        slider.customApp &&
         name.toLowerCase().includes(slider.customApp.toLowerCase())
       ) {
         slider.streams.add(stream);
@@ -227,7 +228,7 @@ export default class VolumeControl extends GObject.Object {
     return result;
   }
 }
-GObject.registerClass(VolumeControl);
+GObject.registerClass(GDeejVolumeControl);
 
 function getSliderLevel(slider: Slider, value: number) {
   if (slider.inverted) {

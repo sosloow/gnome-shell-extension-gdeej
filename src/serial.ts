@@ -17,7 +17,7 @@ type SerialListener = (data: string[]) => void;
 
 Gio._promisify(Gio.InputStream.prototype, 'close_async');
 
-export default class Serial extends GObject.Object {
+export default class GDeejSerial extends GObject.Object {
   static OUTPUT_BUFFER_LIMIT = 10;
   static RECONNECT_TIMEOUT_SECONDS = 1;
   static CONNECTION_CHECK_TIMEOUT = 200;
@@ -226,7 +226,7 @@ export default class Serial extends GObject.Object {
 
     this._reconnectTimeoutId = GLib.timeout_add_seconds(
       GLib.PRIORITY_LOW,
-      Serial.RECONNECT_TIMEOUT_SECONDS,
+      GDeejSerial.RECONNECT_TIMEOUT_SECONDS,
       () => {
         this._reconnectTimeoutId = null!;
 
@@ -309,7 +309,7 @@ export default class Serial extends GObject.Object {
 
     this._outputBuffer.push(values);
 
-    while (this._outputBuffer.length > Serial.OUTPUT_BUFFER_LIMIT) {
+    while (this._outputBuffer.length > GDeejSerial.OUTPUT_BUFFER_LIMIT) {
       this._outputBuffer.shift();
     }
 
@@ -349,7 +349,7 @@ export default class Serial extends GObject.Object {
     }
 
     let device: serialDevice | null = null;
-    for (const status of Serial.AUTODETECT_PRIORITY) {
+    for (const status of GDeejSerial.AUTODETECT_PRIORITY) {
       device =
         this._detectedDevices.find((device) => device.status === status) ??
         null;
@@ -380,7 +380,7 @@ export default class Serial extends GObject.Object {
 
   private _parseSerialOutput(line: string): string[] {
     return line
-      .split(Serial.DELIMITER)
+      .split(GDeejSerial.DELIMITER)
       .filter(Boolean)
       .map((line) => line.trim());
   }
@@ -444,5 +444,5 @@ GObject.registerClass(
       )
     }
   },
-  Serial
+  GDeejSerial
 );

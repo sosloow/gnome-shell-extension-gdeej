@@ -27,7 +27,7 @@ import Adw from 'gi://Adw';
 import Gio from 'gi://Gio';
 import Gtk from 'gi://Gtk';
 
-class AppChooser extends Adw.Window {
+class GDeejAppChooser extends Adw.Window {
   private _listBox: Gtk.ListBox;
   private _btnCancel: Gtk.Button;
   private _btnSelect: Gtk.Button;
@@ -78,4 +78,4 @@ class AppChooser extends Adw.Window {
   }
 }
 
-export default AppChooser;
+export default GDeejAppChooser;
