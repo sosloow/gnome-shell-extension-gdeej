@@ -1,7 +1,5 @@
 # Deej for GNOME Shell
 
-[<img src="https://raw.githubusercontent.com/andyholmes/gnome-shell-extensions-badge/master/get-it-on-ego.svg?sanitize=true" alt="Get it on GNOME Extensions" height="100" align="middle">][ego]
-
 Control your system's audio through physical sliders using a DIY Deej mixer. This extension integrates Deej hardware with GNOME Shell's volume controls, allowing you to adjust volume levels for different applications using physical controls.
 
 ## Prerequisites
@@ -17,7 +15,8 @@ Control your system's audio through physical sliders using a DIY Deej mixer. Thi
 
 ### Install from extensions.gnome.org (Recommended)
 
-<!-- [ego]: https://extensions.gnome.org/extension/ -->
+[<img src="https://raw.githubusercontent.com/andyholmes/gnome-shell-extensions-badge/master/get-it-on-ego.svg?sanitize=true" alt="Get it on GNOME Extensions" height="100" align="middle">][ego]
+[ego]: https://extensions.gnome.org/extension/
 
 ### Manual installation
 
