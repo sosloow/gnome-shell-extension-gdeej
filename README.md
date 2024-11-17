@@ -16,6 +16,7 @@ Control your system's audio through physical sliders using a DIY Deej mixer. Thi
 ### Install from extensions.gnome.org (Recommended)
 
 [<img src="https://raw.githubusercontent.com/andyholmes/gnome-shell-extensions-badge/master/get-it-on-ego.svg?sanitize=true" alt="Get it on GNOME Extensions" height="100" align="middle">][ego]
+
 [ego]: https://extensions.gnome.org/extension/
 
 ### Manual installation
