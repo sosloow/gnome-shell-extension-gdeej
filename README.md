@@ -4,7 +4,7 @@ Control your system's audio through physical sliders using a DIY Deej mixer. Thi
 
 ## Prerequisites
 
-1. This extension requires a hardware Deej audio mixer connected to your PC via USB. You'll need to build the hardware component first - see the [original Deej project](https://github.com/omriharel/deej) for instructions.
+1. This extension requires a hardware Deej volume mixer connected to your PC via USB. You'll need to build the hardware component first - see the [original Deej project](https://github.com/omriharel/deej) for instructions.
 2. Your user must have permission to access serial devices. Add your user to the `dialout` group:
    ```bash
    sudo usermod -aG dialout $USER
@@ -40,7 +40,7 @@ Control your system's audio through physical sliders using a DIY Deej mixer. Thi
 ## Features
 
 - Integration with GNOME Shell's Quick Settings menu
-- GUI Settings! Edit settings in GNOME's extension preferences
+- GUI settings! Edit settings in GNOME's extension preferences
 - Automatic detection and connection to a Deej device
 - Auto-reconnect
 - Configurable per-slider settings:
@@ -58,7 +58,7 @@ Since this extension runs within GNOME Shell, it shares resources with your desk
 If you experience any stutters, freezes or high CPU usage by the `gnome-shell` process after enabling this extension, consider
 
 - lowering the number of updates from your Deej device (to 10-15 from the default 100. I haven't benchmarked for precise numbers, but that's the config I use personally)
-- creating an issue on GitHub, if you think stutters/freezes is a result of a bug
+- creating an issue on GitHub, if you think stutters/freezes are a result of a bug
 
 ### Steam Slider Target
 
@@ -81,7 +81,7 @@ Before creating an issue, please include:
 
 ## Contributing
 
-This extension is in active development and aims to implement the core features of the original Deej desktop application and maybe more. Contributions are welcome!
+As the original Deej, it's a community driven open-source project and any help is welcome 🙃
 
 - Report bugs or request features through GitHub issues
 - Submit pull requests for improvements or fixes
@@ -90,7 +90,3 @@ This extension is in active development and aims to implement the core features 
 ## TODO
 
 - [ ] Add localization support
-
-## License
-
-[Add your chosen license]
