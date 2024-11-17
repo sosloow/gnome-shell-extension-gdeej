@@ -16,7 +16,7 @@ interface Slider extends SliderSettings {
 
 export default class VolumeControl extends GObject.Object {
   private _control = new Gvc.MixerControl({
-    name: 'Deej Volume Control'
+    name: 'GDeej Volume Control'
   });
   private _streams: Map<string, Set<Gvc.MixerStream>> = new Map();
   private _sliders: Slider[] = [];

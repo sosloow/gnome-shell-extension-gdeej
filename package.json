@@ -1,7 +1,7 @@
 {
-  "name": "deej-gnome-extension",
+  "name": "gnome-shell-extension-gdeej",
   "version": "0.0.1",
-  "description": "Control your audio in Gnome with a DIY mixer",
+  "description": "Control your audio in GNOME with a DIY mixer",
   "main": "extension.js",
   "scripts": {
     "build": "make && make install",

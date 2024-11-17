@@ -21,7 +21,7 @@ class DeejToggle extends QuickSettings.QuickMenuToggle {
 
   _init() {
     super._init({
-      title: _('Deej'),
+      title: _('GDeej'),
       toggleMode: true
     });
     this.gicon = getIcon(extension.path, 'deej-logo-symbolic');
@@ -52,7 +52,7 @@ class DeejToggle extends QuickSettings.QuickMenuToggle {
   }
 
   _updateHeader(subtitle?: string) {
-    this.menu.setHeader(this.gicon, _('Deej'), subtitle);
+    this.menu.setHeader(this.gicon, _('GDeej'), subtitle);
   }
 
   destroy() {
@@ -109,7 +109,7 @@ export class Deej {
         }
 
         this._sendOSDNotification(
-          state.serialConnected ? _('Deej connected') : _('Deej disconnected')
+          state.serialConnected ? _('GDeej connected') : _('GDeej disconnected')
         );
       }
     );

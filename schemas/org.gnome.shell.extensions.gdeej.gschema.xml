@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <schemalist>
-    <schema id="org.gnome.shell.extensions.deej" path="/org/gnome/shell/extensions/deej/">
+    <schema id="org.gnome.shell.extensions.gdeej" path="/org/gnome/shell/extensions/gdeej/">
         <key name="serial-enabled" type="b">
             <default>true</default>
             <summary>Serial service enabled</summary>

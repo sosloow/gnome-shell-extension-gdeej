@@ -31,7 +31,7 @@ export default class GnomeRectanglePreferences extends ExtensionPreferences {
 
   // @ts-expect-error method is expected to return promise for some reason
   fillPreferencesWindow(window: Adw.PreferencesWindow) {
-    const resourcePath = GLib.build_filenamev([this.path, 'deej.gresource']);
+    const resourcePath = GLib.build_filenamev([this.path, 'gdeej.gresource']);
     Gio.resources_register(Gio.resource_load(resourcePath));
 
     // const cssProvider = new Gtk.CssProvider();
@@ -51,7 +51,7 @@ export default class GnomeRectanglePreferences extends ExtensionPreferences {
         {
           GTypeName: 'DeejFilePickerRow',
           Template:
-            'resource:///org/gnome/shell/extensions/deej/ui/file-picker-row.ui',
+            'resource:///org/gnome/shell/extensions/gdeej/ui/file-picker-row.ui',
           InternalChildren: ['file-button']
         },
         FilePickerRowOrig
@@ -63,7 +63,7 @@ export default class GnomeRectanglePreferences extends ExtensionPreferences {
         {
           GTypeName: 'DeejSliderRow',
           Template:
-            'resource:///org/gnome/shell/extensions/deej/ui/slider-row.ui',
+            'resource:///org/gnome/shell/extensions/gdeej/ui/slider-row.ui',
           Properties: {
             'slider-config': GObject.param_spec_variant(
               'slider-config',
@@ -111,7 +111,7 @@ export default class GnomeRectanglePreferences extends ExtensionPreferences {
         {
           GTypeName: 'AppChooser',
           Template:
-            'resource:///org/gnome/shell/extensions/deej/ui/app-chooser.ui',
+            'resource:///org/gnome/shell/extensions/gdeej/ui/app-chooser.ui',
           InternalChildren: ['list-box', 'btn-select', 'btn-cancel']
         },
         AppChooserOrig

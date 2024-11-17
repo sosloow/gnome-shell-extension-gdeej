@@ -1,4 +1,4 @@
-NAME=deej
+NAME=gdeej
 DOMAIN=kareraisu.me
 LOCAL_EXTENSIONS_PATH=~/.local/share/gnome-shell/extensions
 
