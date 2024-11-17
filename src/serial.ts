@@ -148,6 +148,17 @@ export default class Serial extends GObject.Object {
       binding.unbind();
     }
 
+    while (this._listeners.length) {
+      this._listeners.pop();
+    }
+    this._listeners = null!;
+
+    this.output = null!;
+
+    this._outputBuffer = null!;
+
+    this._detectedDevices = null!;
+
     return this.disable();
   }
 
@@ -184,13 +195,6 @@ export default class Serial extends GObject.Object {
     try {
       this._readDeviceLoopCancellable?.cancel();
       await this._deviceStdout?.close_async(GLib.PRIORITY_DEFAULT, null);
-    } catch (err) {
-      console.warn(err);
-    }
-    this._deviceStdout = null!;
-
-    try {
-      this._readDeviceLoopCancellable?.cancel();
       await this._deviceStderr?.close_async(GLib.PRIORITY_DEFAULT, null);
     } catch (err) {
       console.warn(err);

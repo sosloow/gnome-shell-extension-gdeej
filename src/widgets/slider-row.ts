@@ -87,13 +87,17 @@ export default class DeejSliderRow extends Adw.PreferencesRow {
       const value = validateNumericEntry(text, SLIDER_MIN_VALUE);
 
       GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
-        if (String(value) !== text) {
-          this._entryMin.block_signal_handler(entryMinChangedHandler);
-          this._entryMin.set_text(String(value));
-          this._entryMin.unblock_signal_handler(entryMinChangedHandler);
-        }
+        try {
+          if (String(value) !== text) {
+            this._entryMin.block_signal_handler(entryMinChangedHandler);
+            this._entryMin.set_text(String(value));
+            this._entryMin.unblock_signal_handler(entryMinChangedHandler);
+          }
 
-        this._onConfigChanged();
+          this._onConfigChanged();
+        } catch (err) {
+          console.warn(err);
+        }
 
         return GLib.SOURCE_REMOVE;
       });
@@ -104,13 +108,17 @@ export default class DeejSliderRow extends Adw.PreferencesRow {
       const value = validateNumericEntry(text, SLIDER_MIN_VALUE);
 
       GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
-        if (String(value) !== text) {
-          this._entryMax.block_signal_handler(entryMaxChangedHandler);
-          this._entryMax.set_text(String(value));
-          this._entryMax.unblock_signal_handler(entryMaxChangedHandler);
-        }
+        try {
+          if (String(value) !== text) {
+            this._entryMax.block_signal_handler(entryMaxChangedHandler);
+            this._entryMax.set_text(String(value));
+            this._entryMax.unblock_signal_handler(entryMaxChangedHandler);
+          }
 
-        this._onConfigChanged();
+          this._onConfigChanged();
+        } catch (err) {
+          console.warn(err);
+        }
 
         return GLib.SOURCE_REMOVE;
       });

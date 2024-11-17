@@ -4,3 +4,4 @@ dist
 *.compiled
 *.gresource
 *.zip
+*.stamp

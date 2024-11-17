@@ -90,3 +90,18 @@ As the original Deej, it's a community driven open-source project and any help i
 ## TODO
 
 - [ ] Add localization support
+
+## Credits and Licenses
+
+This project was inspired and uses code patterns from these awesome projects:
+
+- [Deej](https://github.com/omriharel/deej)
+- [GSConnect](https://github.com/GSConnect/gnome-shell-extension-gsconnect)
+- [Vitals](https://github.com/corecoding/Vitals)
+- [Caffeine](https://github.com/eonpatapon/gnome-shell-extension-caffeine)
+- [Chronomix](https://github.com/zagortenay333/cronomix)
+- [Media controls](https://github.com/sakithb/media-controls/)
+
+This project incorporates the following code from other authors:
+
+- **app-chooser.ts**: derived from [sakithb/media-controls](https://github.com/sakithb/media-controls) by Marcus Heine, used under the MIT License. The modified version is available in `src/widgets/app-chooser.ts`.

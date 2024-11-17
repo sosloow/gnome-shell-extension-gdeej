@@ -9,34 +9,18 @@ export function waitForIdle(
   const method = descriptor.value;
 
   descriptor.value = function (...args: unknown[]) {
-    GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
-      method.apply(this, args);
+    GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+      try {
+        method.apply(this, args);
+      } catch (err) {
+        console.warn(err);
+      }
 
       return GLib.SOURCE_REMOVE;
     });
   };
 
   return descriptor;
-}
-
-export function waitForTimeout(timeoutMs = 1, priority = GLib.PRIORITY_LOW) {
-  timeoutMs = Math.round(timeoutMs);
-
-  return function (target: any, key: string, descriptor: PropertyDescriptor) {
-    const method = descriptor.value;
-    const timeoutIdKey = `_${key}TimeoutId`;
-
-    descriptor.value = function (...args: unknown[]) {
-      target[timeoutIdKey] = GLib.timeout_add(priority, timeoutMs, () => {
-        method.apply(this, args);
-
-        target[timeoutIdKey] = null;
-        return GLib.SOURCE_REMOVE;
-      });
-    };
-
-    return descriptor;
-  };
 }
 
 type NotifyProps = {

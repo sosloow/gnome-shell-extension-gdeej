@@ -95,8 +95,7 @@ export class Deej {
     this._indicator = new DeejIndicator();
     this._icon = getIcon(extension.path, 'deej-logo-symbolic');
 
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
+    // @ts-expect-error addExternalIndicator exists
     Main.panel.statusArea.quickSettings.addExternalIndicator(this._indicator);
 
     this._notificationHandlerId = state.connect(
