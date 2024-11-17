@@ -34,15 +34,15 @@ export default class GnomeRectanglePreferences extends ExtensionPreferences {
     const resourcePath = GLib.build_filenamev([this.path, 'deej.gresource']);
     Gio.resources_register(Gio.resource_load(resourcePath));
 
-    const cssProvider = new Gtk.CssProvider();
-    cssProvider.load_from_resource(
-      '/org/gnome/shell/extensions/deej/css/stylesheet.css'
-    );
-    Gtk.StyleContext.add_provider_for_display(
-      window.get_display(),
-      cssProvider,
-      Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
-    );
+    // const cssProvider = new Gtk.CssProvider();
+    // cssProvider.load_from_resource(
+    //   '/org/gnome/shell/extensions/deej/css/stylesheet.css'
+    // );
+    // Gtk.StyleContext.add_provider_for_display(
+    //   window.get_display(),
+    //   cssProvider,
+    //   Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+    // );
 
     this._settings = this.getSettings();
 

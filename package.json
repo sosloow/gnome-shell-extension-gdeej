@@ -8,7 +8,7 @@
     "start": "env GNOME_SHELL_SLOWDOWN_FACTOR=2 MUTTER_DEBUG_DUMMY_MODE_SPECS=1024x768 SHELL_DEBUG=all dbus-run-session -- gnome-shell --nested --wayland"
   },
   "author": "Stepan Shilin",
-  "license": "GPL-2.0-only",
+  "license": "MIT",
   "devDependencies": {
     "@eslint/js": "^9.14.0",
     "@types/eslint__js": "^8.42.3",

@@ -5,6 +5,6 @@
         <file>ui/file-picker-row.ui</file>
         <file>ui/slider-row.ui</file>
         <file>ui/app-chooser.ui</file>
-        <file>css/stylesheet.css</file>
+        <!-- <file>css/stylesheet.css</file> -->
     </gresource>
 </gresources>

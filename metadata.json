@@ -1,8 +1,8 @@
 {
-  "name": "Deej",
-  "description": "Control your audio with a DIY mixer",
   "uuid": "deej@kareraisu.me",
+  "name": "Deej",
+  "description": "Control your audio with a DIY audio mixer",
   "settings-schema": "org.gnome.shell.extensions.deej",
   "shell-version": ["46"],
-  "stylesheet": true
+  "url": "https://gjs.guide/extensions"
 }
