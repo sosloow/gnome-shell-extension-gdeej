@@ -5,7 +5,21 @@ Control your system's audio through physical sliders using a DIY deej mixer. Thi
 ## Prerequisites
 
 1. This extension requires a hardware deej volume mixer connected to your PC via USB. You'll need to build the hardware component first - see the [original deej project](https://github.com/omriharel/deej) for instructions.
-2. Your user must have permission to access serial devices. Add your user to the `dialout` group:
+2. This extension runs `socat` in background to read from your deej. Install it
+   from your distribution's repository
+   - For Ubuntu/Debian:
+     ```bash
+     sudo apt install socat
+     ```
+   - For Fedora:
+     ```bash
+     sudo dnf install socat
+     ```
+   - For Arch Linux:
+     ```bash
+     sudo pacman -S socat
+     ```
+3. Your user must have permission to access serial devices. Add your user to the `dialout` group:
    ```bash
    sudo usermod -aG dialout $USER
    ```
@@ -16,8 +30,6 @@ Control your system's audio through physical sliders using a DIY deej mixer. Thi
 ### Install from extensions.gnome.org (Recommended)
 
 [<img src="https://raw.githubusercontent.com/andyholmes/gnome-shell-extensions-badge/master/get-it-on-ego.svg?sanitize=true" alt="Get it on GNOME Extensions" height="100" align="middle">][ego]
-
-[ego]: https://extensions.gnome.org/extension/7556/gdeej/
 
 ### Manual installation
 
@@ -105,3 +117,5 @@ This project was inspired and uses code patterns from these awesome projects:
 This project incorporates the following code from other authors:
 
 - **app-chooser.ts**: derived from [sakithb/media-controls](https://github.com/sakithb/media-controls) by Marcus Heine, used under the MIT License. The modified version is available in `src/widgets/app-chooser.ts`.
+
+[ego]: https://extensions.gnome.org/extension/7556/gdeej/
