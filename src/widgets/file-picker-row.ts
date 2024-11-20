@@ -1,9 +1,23 @@
 import Gtk from 'gi://Gtk';
 import Adw from 'gi://Adw';
+import GObject from 'gi://GObject';
 
 import { gettext as _ } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
-export default class GDeejFilePickerRow extends Adw.EntryRow {
+import { RESOURCE_PATH } from '../constants.js';
+
+export class GDeejFilePickerRow extends Adw.EntryRow {
+  static {
+    GObject.registerClass(
+      {
+        GTypeName: 'GDeejFilePickerRow',
+        Template: `resource://${RESOURCE_PATH}ui/file-picker-row.ui`,
+        InternalChildren: ['file-button']
+      },
+      this
+    );
+  }
+
   fileButton: Gtk.Button;
 
   constructor(props = {}) {

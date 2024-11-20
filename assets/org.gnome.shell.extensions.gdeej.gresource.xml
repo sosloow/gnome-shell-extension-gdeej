@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gresources>
-    <gresource prefix="/org/gnome/shell/extensions/gdeej/">
+    <gresource prefix="/org/gnome/Shell/Extensions/gdeej/">
         <file>ui/prefs.ui</file>
         <file>ui/file-picker-row.ui</file>
         <file>ui/slider-row.ui</file>

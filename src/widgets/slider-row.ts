@@ -1,24 +1,76 @@
 import Adw from 'gi://Adw';
 import GLib from 'gi://GLib';
 import Gtk from 'gi://Gtk';
+import GObject from 'gi://GObject';
 
 import { gettext as _ } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
 import { SliderSettings, SliderTarget } from './types.js';
 import { sliderToVariant } from './helpers.js';
-import { SLIDER_MIN_VALUE, SLIDER_MAX_VALUE } from '../constants.js';
-import AppChooser from './app-chooser.js';
+import {
+  SLIDER_MIN_VALUE,
+  SLIDER_MAX_VALUE,
+  RESOURCE_PATH
+} from '../constants.js';
+import { GDeejAppChooser } from './app-chooser.js';
 
 interface SliderRowConstructorProps
   extends Adw.PreferencesRow.ConstructorProps {
   sliderIndex?: number;
 }
-export default class DeejSliderRow extends Adw.PreferencesRow {
+export class GDeejSliderRow extends Adw.PreferencesRow {
+  static {
+    GObject.registerClass(
+      {
+        GTypeName: 'GDeejSliderRow',
+        Template: `resource://${RESOURCE_PATH}ui/slider-row.ui`,
+        Properties: {
+          'slider-config': GObject.param_spec_variant(
+            'slider-config',
+            'Slider Configuration',
+            'Configuration for this slider',
+            new GLib.VariantType('a{sv}'),
+            null,
+            GObject.ParamFlags.READWRITE
+          ),
+          'slider-index': GObject.ParamSpec.int(
+            'slider-index',
+            'Slider Index',
+            'Index of this slider in the array',
+            GObject.ParamFlags.READWRITE,
+            -1,
+            100,
+            -1
+          )
+        },
+
+        InternalChildren: [
+          'entry-custom-app',
+          'btn-app-chooser',
+          'switch-invert',
+          'btn-remove',
+          'dropdown-target',
+          'label-title',
+          'entry-min',
+          'entry-max'
+        ],
+
+        Signals: {
+          removed: {},
+          'config-changed': {
+            param_types: [GLib.Variant.$gtype]
+          }
+        }
+      },
+      this
+    );
+  }
+
   private static readonly DEBOUNCE_TIMEOUT_MS = 1000;
 
   private _btnAppChooser: Gtk.Button;
   private _entryCustomApp: Gtk.Entry;
-  private _appChooser: AppChooser;
+  private _appChooser: GDeejAppChooser;
   private _switchInvert: Gtk.Switch;
   private _removeButton: Gtk.Button;
   private _dropdownTarget: Gtk.DropDown;
@@ -53,7 +105,7 @@ export default class DeejSliderRow extends Adw.PreferencesRow {
     // @ts-expect-error Typescript doesn't know about the internal children
     this._entryCustomApp = this._entry_custom_app as Gtk.Entry;
 
-    this._appChooser = new AppChooser();
+    this._appChooser = new GDeejAppChooser();
 
     labelTitle.label = _('Slider') + ' ' + (this.sliderIndex + 1);
 
@@ -175,7 +227,7 @@ export default class DeejSliderRow extends Adw.PreferencesRow {
 
     this._debounceTimeoutId = GLib.timeout_add(
       GLib.PRIORITY_DEFAULT,
-      DeejSliderRow.DEBOUNCE_TIMEOUT_MS,
+      GDeejSliderRow.DEBOUNCE_TIMEOUT_MS,
       () => {
         this._debounceTimeoutId = null;
 

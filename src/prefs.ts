@@ -1,13 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import Adw from 'gi://Adw';
 import Gtk from 'gi://Gtk';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
-import { ExtensionPreferences } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
-import FilePickerRow from './widgets/file-picker-row.js';
-import SliderRow from './widgets/slider-row.js';
-import AppChooser from './widgets/app-chooser.js';
+import { ExtensionPreferences } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
 import { listSocatBaudRates } from './utils/os.js';
 import { SliderTarget, SliderSettings } from './widgets/types.js';
@@ -19,49 +17,68 @@ import {
   RESOURCE_PATH
 } from './constants.js';
 
-// let FilePickerRow: typeof FilePickerRowOrig;
-// let SliderRow: typeof SliderRowOrig;
-// let AppChooser: typeof AppChooserOrig;
-
-export default class GnomeRectanglePreferences extends ExtensionPreferences {
+export default class GdeejPreferences extends ExtensionPreferences {
   private _settings?: Gio.Settings;
   private _builder?: Gtk.Builder;
   private _generalPage?: Adw.PreferencesPage;
   private _slidersPage?: Adw.PreferencesPage;
   private _listBoxSliders?: Gtk.ListBox;
 
-  // @ts-expect-error method is expected to return promise for some reason
-  fillPreferencesWindow(window: Adw.PreferencesWindow) {
-    const resourcePath = GLib.build_filenamev([this.path, 'gdeej.gresource']);
-    Gio.resources_register(Gio.resource_load(resourcePath));
+  private GDeejSliderRow: any;
 
-    // const cssProvider = new Gtk.CssProvider();
-    // cssProvider.load_from_resource(
-    //   '/org/gnome/shell/extensions/deej/css/stylesheet.css'
-    // );
-    // Gtk.StyleContext.add_provider_for_display(
-    //   window.get_display(),
-    //   cssProvider,
-    //   Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
-    // );
+  async fillPreferencesWindow(window: Adw.PreferencesWindow) {
+    try {
+      const resourcePath = GLib.build_filenamev([this.path, 'gdeej.gresource']);
+      Gio.resources_register(Gio.resource_load(resourcePath));
 
-    this._settings = this.getSettings();
+      const dummyPage = new Adw.PreferencesPage();
+      window.add(dummyPage);
 
-    this._registerClasses();
+      // const cssProvider = new Gtk.CssProvider();
+      // cssProvider.load_from_resource(
+      //   '/org/gnome/shell/extensions/deej/css/stylesheet.css'
+      // );
+      // Gtk.StyleContext.add_provider_for_display(
+      //   window.get_display(),
+      //   cssProvider,
+      //   Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+      // );
 
-    this._builder = Gtk.Builder.new_from_resource(
-      `${RESOURCE_PATH}ui/prefs.ui`
-    );
+      this._settings = this.getSettings();
 
-    this._generalPage = this._builder.get_object('page-general');
-    this._slidersPage = this._builder.get_object('page-sliders');
+      const { GDeejFilePickerRow } = await import(
+        './widgets/file-picker-row.js'
+      );
+      const { GDeejAppChooser } = await import('./widgets/app-chooser.js');
+      const { GDeejSliderRow } = await import('./widgets/slider-row.js');
+      this.GDeejSliderRow = GDeejSliderRow;
 
-    this._fillGeneralPage();
-    this._fillSlidersPage();
-    this._bindSettings();
+      GObject.type_ensure(GDeejFilePickerRow.$gtype);
+      GObject.type_ensure(GDeejAppChooser.$gtype);
+      GObject.type_ensure(GDeejSliderRow.$gtype);
 
-    window.add(this._generalPage);
-    window.add(this._slidersPage);
+      this._builder = Gtk.Builder.new_from_resource(
+        `${RESOURCE_PATH}ui/prefs.ui`
+      );
+
+      this._generalPage = this._builder.get_object('page-general');
+      this._slidersPage = this._builder.get_object('page-sliders');
+
+      this._fillGeneralPage();
+      this._fillSlidersPage();
+      this._bindSettings();
+
+      window.remove(dummyPage);
+
+      window.add(this._generalPage);
+      window.add(this._slidersPage);
+
+      window.connect('close-request', () => {
+        this.GDeejSliderRow = null!;
+      });
+    } catch (err) {
+      console.error(err);
+    }
   }
 
   private _fillGeneralPage() {
@@ -138,23 +155,25 @@ export default class GnomeRectanglePreferences extends ExtensionPreferences {
   }
 
   private refreshSliderList() {
-    let slider = this._listBoxSliders!.get_first_child() as SliderRow;
+    let slider = this._listBoxSliders!.get_first_child();
 
     while (slider) {
+      // @ts-expect-error it GDeejSliderRow
       slider.destroy();
       this._listBoxSliders!.remove(slider);
 
-      slider = this._listBoxSliders!.get_first_child() as SliderRow;
+      slider = this._listBoxSliders!.get_first_child();
     }
 
     const sliders = this._getSliders();
 
     sliders.forEach((slider, index) => {
-      const row = new SliderRow({
+      const row = new this.GDeejSliderRow({
         sliderIndex: index
       });
       row.sliderConfig = slider;
 
+      // @ts-expect-error GDeejSliderRow has 'config-changed'
       row.connect('config-changed', (row, config) => {
         const sliders = this._settings!.get_value(
           'sliders'
@@ -234,83 +253,6 @@ export default class GnomeRectanglePreferences extends ExtensionPreferences {
       widget[property] = this._settings.get_value(key).recursiveUnpack();
 
       this._settings.bind(key, widget, property, bindingFlags);
-    }
-  }
-
-  private _registerClasses() {
-    try {
-      GObject.registerClass(
-        {
-          GTypeName: 'GDeejFilePickerRow',
-          Template: `resource://${RESOURCE_PATH}ui/file-picker-row.ui`,
-          InternalChildren: ['file-button']
-        },
-        FilePickerRow
-      );
-    } catch (err) {
-      console.warn(err);
-    }
-
-    try {
-      GObject.registerClass(
-        {
-          GTypeName: 'GDeejSliderRow',
-          Template: `resource://${RESOURCE_PATH}ui/slider-row.ui`,
-          Properties: {
-            'slider-config': GObject.param_spec_variant(
-              'slider-config',
-              'Slider Configuration',
-              'Configuration for this slider',
-              new GLib.VariantType('a{sv}'),
-              null,
-              GObject.ParamFlags.READWRITE
-            ),
-            'slider-index': GObject.ParamSpec.int(
-              'slider-index',
-              'Slider Index',
-              'Index of this slider in the array',
-              GObject.ParamFlags.READWRITE,
-              -1,
-              100,
-              -1
-            )
-          },
-
-          InternalChildren: [
-            'entry-custom-app',
-            'btn-app-chooser',
-            'switch-invert',
-            'btn-remove',
-            'dropdown-target',
-            'label-title',
-            'entry-min',
-            'entry-max'
-          ],
-
-          Signals: {
-            removed: {},
-            'config-changed': {
-              param_types: [GLib.Variant.$gtype]
-            }
-          }
-        },
-        SliderRow
-      );
-    } catch (err) {
-      console.warn(err);
-    }
-
-    try {
-      GObject.registerClass(
-        {
-          GTypeName: 'GDeejAppChooser',
-          Template: `resource://${RESOURCE_PATH}ui/app-chooser.ui`,
-          InternalChildren: ['list-box', 'btn-select', 'btn-cancel']
-        },
-        AppChooser
-      );
-    } catch (err) {
-      console.warn(err);
     }
   }
 }

@@ -26,8 +26,22 @@
 import Adw from 'gi://Adw';
 import Gio from 'gi://Gio';
 import Gtk from 'gi://Gtk';
+import GObject from 'gi://GObject';
 
-class GDeejAppChooser extends Adw.Window {
+import { RESOURCE_PATH } from '../constants.js';
+
+export class GDeejAppChooser extends Adw.Window {
+  static {
+    GObject.registerClass(
+      {
+        GTypeName: 'GDeejAppChooser',
+        Template: `resource://${RESOURCE_PATH}ui/app-chooser.ui`,
+        InternalChildren: ['list-box', 'btn-select', 'btn-cancel']
+      },
+      this
+    );
+  }
+
   private _listBox: Gtk.ListBox;
   private _btnCancel: Gtk.Button;
   private _btnSelect: Gtk.Button;
@@ -77,5 +91,3 @@ class GDeejAppChooser extends Adw.Window {
     });
   }
 }
-
-export default GDeejAppChooser;
