@@ -1,20 +1,41 @@
 import GObject from 'gi://GObject';
 
-import { notify } from './decorators.js';
-
 export default class GDeejState extends GObject.Object {
-  @notify()
-  accessor serialError: string;
-  @notify({ changed: true })
-  accessor serialConnected: boolean;
+  _serialError: string;
+  _serialConnected: boolean;
   serialInitialConnect: boolean;
 
   constructor() {
     super();
 
-    this.serialError = null!;
-    this.serialConnected = false;
+    this._serialError = null!;
+    this._serialConnected = false;
     this.serialInitialConnect = true;
+  }
+
+  get serialError(): string {
+    return this._serialError;
+  }
+
+  set serialError(value: string) {
+    this._serialError = value;
+
+    this.notify('serialError');
+  }
+
+  get serialConnected(): boolean {
+    return this._serialConnected;
+  }
+
+  set serialConnected(value: boolean) {
+    const oldValue = this._serialConnected;
+    this._serialConnected = value;
+
+    this.notify('serialConnected');
+
+    if (oldValue !== value) {
+      this.emit('changed::serialConnected');
+    }
   }
 }
 GObject.registerClass(

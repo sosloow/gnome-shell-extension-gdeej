@@ -1,5 +1,6 @@
 import GObject from 'gi://GObject';
 import Gio from 'gi://Gio';
+import GLib from 'gi://GLib';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {
   Extension,
@@ -90,8 +91,16 @@ export class GDeej {
   _indicator?: GDeejIndicator;
   _notificationHandlerId?: number;
   _icon?: Gio.Icon;
+  _resource?: Gio.Resource;
 
   init() {
+    const resourcePath = GLib.build_filenamev([
+      extension.path,
+      'gdeej.gresource'
+    ]);
+    this._resource = Gio.resource_load(resourcePath);
+    Gio.resources_register(this._resource);
+
     this._indicator = new GDeejIndicator();
     this._icon = getIcon(extension.path, 'deej-logo-symbolic');
 
@@ -126,6 +135,15 @@ export class GDeej {
 
     state.disconnect(this._notificationHandlerId!);
     this._notificationHandlerId = null!;
+
+    if (this._resource) {
+      try {
+        Gio.resources_unregister(this._resource!);
+      } catch (err) {
+        console.warn(err);
+      }
+      this._resource = null!;
+    }
   }
 }
 

@@ -5,9 +5,9 @@ import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
 import { ExtensionPreferences } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
-import FilePickerRowOrig from './widgets/file-picker-row.js';
-import SliderRowOrig from './widgets/slider-row.js';
-import AppChooserOrig from './widgets/app-chooser.js';
+import FilePickerRow from './widgets/file-picker-row.js';
+import SliderRow from './widgets/slider-row.js';
+import AppChooser from './widgets/app-chooser.js';
 
 import { listSocatBaudRates } from './utils/os.js';
 import { SliderTarget, SliderSettings } from './widgets/types.js';
@@ -15,12 +15,13 @@ import { sliderToVariant } from './widgets/helpers.js';
 import {
   settingsKeys,
   SLIDER_MIN_VALUE,
-  SLIDER_MAX_VALUE
+  SLIDER_MAX_VALUE,
+  RESOURCE_PATH
 } from './constants.js';
 
-let FilePickerRow: typeof FilePickerRowOrig;
-let SliderRow: typeof SliderRowOrig;
-let AppChooser: typeof AppChooserOrig;
+// let FilePickerRow: typeof FilePickerRowOrig;
+// let SliderRow: typeof SliderRowOrig;
+// let AppChooser: typeof AppChooserOrig;
 
 export default class GnomeRectanglePreferences extends ExtensionPreferences {
   private _settings?: Gio.Settings;
@@ -46,80 +47,10 @@ export default class GnomeRectanglePreferences extends ExtensionPreferences {
 
     this._settings = this.getSettings();
 
-    if (!FilePickerRow) {
-      FilePickerRow = GObject.registerClass(
-        {
-          GTypeName: 'GDeejFilePickerRow',
-          Template:
-            'resource:///org/gnome/shell/extensions/gdeej/ui/file-picker-row.ui',
-          InternalChildren: ['file-button']
-        },
-        FilePickerRowOrig
-      );
-    }
-
-    if (!SliderRow) {
-      SliderRow = GObject.registerClass(
-        {
-          GTypeName: 'GDeejSliderRow',
-          Template:
-            'resource:///org/gnome/shell/extensions/gdeej/ui/slider-row.ui',
-          Properties: {
-            'slider-config': GObject.param_spec_variant(
-              'slider-config',
-              'Slider Configuration',
-              'Configuration for this slider',
-              new GLib.VariantType('a{sv}'),
-              null,
-              GObject.ParamFlags.READWRITE
-            ),
-            'slider-index': GObject.ParamSpec.int(
-              'slider-index',
-              'Slider Index',
-              'Index of this slider in the array',
-              GObject.ParamFlags.READWRITE,
-              -1,
-              100,
-              -1
-            )
-          },
-
-          InternalChildren: [
-            'entry-custom-app',
-            'btn-app-chooser',
-            'switch-invert',
-            'btn-remove',
-            'dropdown-target',
-            'label-title',
-            'entry-min',
-            'entry-max'
-          ],
-
-          Signals: {
-            removed: {},
-            'config-changed': {
-              param_types: [GLib.Variant.$gtype]
-            }
-          }
-        },
-        SliderRowOrig
-      );
-    }
-
-    if (AppChooser == null) {
-      AppChooser = GObject.registerClass(
-        {
-          GTypeName: 'GDeejAppChooser',
-          Template:
-            'resource:///org/gnome/shell/extensions/gdeej/ui/app-chooser.ui',
-          InternalChildren: ['list-box', 'btn-select', 'btn-cancel']
-        },
-        AppChooserOrig
-      );
-    }
+    this._registerClasses();
 
     this._builder = Gtk.Builder.new_from_resource(
-      '/org/gnome/shell/extensions/gdeej/ui/prefs.ui'
+      `${RESOURCE_PATH}ui/prefs.ui`
     );
 
     this._generalPage = this._builder.get_object('page-general');
@@ -207,13 +138,13 @@ export default class GnomeRectanglePreferences extends ExtensionPreferences {
   }
 
   private refreshSliderList() {
-    let slider = this._listBoxSliders!.get_first_child() as SliderRowOrig;
+    let slider = this._listBoxSliders!.get_first_child() as SliderRow;
 
     while (slider) {
       slider.destroy();
       this._listBoxSliders!.remove(slider);
 
-      slider = this._listBoxSliders!.get_first_child() as SliderRowOrig;
+      slider = this._listBoxSliders!.get_first_child() as SliderRow;
     }
 
     const sliders = this._getSliders();
@@ -303,6 +234,83 @@ export default class GnomeRectanglePreferences extends ExtensionPreferences {
       widget[property] = this._settings.get_value(key).recursiveUnpack();
 
       this._settings.bind(key, widget, property, bindingFlags);
+    }
+  }
+
+  private _registerClasses() {
+    try {
+      GObject.registerClass(
+        {
+          GTypeName: 'GDeejFilePickerRow',
+          Template: `resource://${RESOURCE_PATH}ui/file-picker-row.ui`,
+          InternalChildren: ['file-button']
+        },
+        FilePickerRow
+      );
+    } catch (err) {
+      console.warn(err);
+    }
+
+    try {
+      GObject.registerClass(
+        {
+          GTypeName: 'GDeejSliderRow',
+          Template: `resource://${RESOURCE_PATH}ui/slider-row.ui`,
+          Properties: {
+            'slider-config': GObject.param_spec_variant(
+              'slider-config',
+              'Slider Configuration',
+              'Configuration for this slider',
+              new GLib.VariantType('a{sv}'),
+              null,
+              GObject.ParamFlags.READWRITE
+            ),
+            'slider-index': GObject.ParamSpec.int(
+              'slider-index',
+              'Slider Index',
+              'Index of this slider in the array',
+              GObject.ParamFlags.READWRITE,
+              -1,
+              100,
+              -1
+            )
+          },
+
+          InternalChildren: [
+            'entry-custom-app',
+            'btn-app-chooser',
+            'switch-invert',
+            'btn-remove',
+            'dropdown-target',
+            'label-title',
+            'entry-min',
+            'entry-max'
+          ],
+
+          Signals: {
+            removed: {},
+            'config-changed': {
+              param_types: [GLib.Variant.$gtype]
+            }
+          }
+        },
+        SliderRow
+      );
+    } catch (err) {
+      console.warn(err);
+    }
+
+    try {
+      GObject.registerClass(
+        {
+          GTypeName: 'GDeejAppChooser',
+          Template: `resource://${RESOURCE_PATH}ui/app-chooser.ui`,
+          InternalChildren: ['list-box', 'btn-select', 'btn-cancel']
+        },
+        AppChooser
+      );
+    } catch (err) {
+      console.warn(err);
     }
   }
 }

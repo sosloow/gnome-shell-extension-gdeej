@@ -6,7 +6,6 @@ import { gettext as _ } from 'resource:///org/gnome/shell/extensions/extension.j
 import { settings, state } from './extension.js';
 import { settingsKeys, serialDeviceStatuses } from './constants.js';
 import { serialStream, detectSerialDevices } from './utils/os.js';
-import { waitForIdle, notify } from './utils/decorators.js';
 
 type serialDevice = {
   path: string;
@@ -18,10 +17,10 @@ type SerialListener = (data: string[]) => void;
 Gio._promisify(Gio.InputStream.prototype, 'close_async');
 
 export default class GDeejSerial extends GObject.Object {
-  static OUTPUT_BUFFER_LIMIT = 10;
   static RECONNECT_TIMEOUT_SECONDS = 1;
   static CONNECTION_CHECK_TIMEOUT = 200;
-  static READ_BYTES_LENGTH = 1024;
+  static BURST_THRESHOLD_US = 1000;
+  static BURST_THRESHOLD_LINES = 6;
   static DELIMITER = '|';
   static AUTODETECT_PRIORITY = [
     serialDeviceStatuses.ACTIVE,
@@ -31,19 +30,18 @@ export default class GDeejSerial extends GObject.Object {
   ];
 
   enabled: boolean;
-  @notify()
-  accessor error: string;
-  @notify()
-  accessor connected: boolean;
-  @notify()
-  accessor initialConnect: boolean;
+  _error: string = null!;
+  _connected: boolean = false;
+  _initialConnect: boolean = true;
 
   autoReconnect: boolean;
   autoDetect: boolean;
   baudRate: string;
   output?: string[];
 
-  private _outputBuffer: string[][] = [];
+  private _outputBuffer: string[] = [];
+  private _readStart?: number;
+  private _errorRaw: string = null!;
 
   _detectedDevices: serialDevice[] = [];
   _devicePath?: string;
@@ -52,6 +50,7 @@ export default class GDeejSerial extends GObject.Object {
   _deviceStderr?: Gio.DataInputStream;
   _deviceSubprocess?: Gio.Subprocess;
 
+  _readDeviceLoopSourceId?: number;
   _readDeviceLoopCancellable?: Gio.Cancellable;
 
   _reconnectTimeoutId?: number;
@@ -63,9 +62,6 @@ export default class GDeejSerial extends GObject.Object {
   constructor() {
     super();
 
-    this.error = null!;
-    this.connected = false;
-    this.initialConnect = true;
     this.enabled = settings.get_boolean(settingsKeys.SERIAL_ENABLED);
     this.autoReconnect = settings.get_boolean(
       settingsKeys.DEVICE_AUTO_RECONNECT
@@ -135,7 +131,10 @@ export default class GDeejSerial extends GObject.Object {
     this.enabled = settings.get_boolean(settingsKeys.SERIAL_ENABLED);
 
     this._reconnect(true).catch((err) => {
-      console.warn(err);
+      if (this._errorRaw !== err.message) {
+        this._errorRaw = err.message;
+        console.warn(err);
+      }
 
       this._updateDeviceStatus(serialDeviceStatuses.ERROR);
     });
@@ -148,9 +147,7 @@ export default class GDeejSerial extends GObject.Object {
       binding.unbind();
     }
 
-    while (this._listeners.length) {
-      this._listeners.pop();
-    }
+    this._listeners.length = 0;
     this._listeners = null!;
 
     this.output = null!;
@@ -158,6 +155,19 @@ export default class GDeejSerial extends GObject.Object {
     this._outputBuffer = null!;
 
     this._detectedDevices = null!;
+
+    if (this._readDeviceLoopSourceId) {
+      try {
+        GLib.source_remove(this._readDeviceLoopSourceId);
+      } catch (err) {
+        if (err instanceof Error && this._errorRaw !== err.message) {
+          this._errorRaw = err.message;
+          console.warn(err);
+        }
+      }
+
+      this._readDeviceLoopSourceId = null!;
+    }
 
     return this.disable();
   }
@@ -214,7 +224,7 @@ export default class GDeejSerial extends GObject.Object {
     this._deviceStdout = stdout;
     this._deviceStderr = stderr;
 
-    return this._readDeviceLoop();
+    return this._queueReadDeviceLoop();
   }
 
   async _reconnect(force = false) {
@@ -232,8 +242,12 @@ export default class GDeejSerial extends GObject.Object {
 
         this._connect().catch((err) => {
           this._updateDeviceStatus(serialDeviceStatuses.ERROR);
-          console.warn(err);
           this.error = _('Failed to connect');
+
+          if (this._errorRaw !== err.message) {
+            this._errorRaw = err.message;
+            console.warn(err);
+          }
 
           this._reconnect();
         });
@@ -243,7 +257,32 @@ export default class GDeejSerial extends GObject.Object {
     );
   }
 
-  @waitForIdle
+  _queueReadDeviceLoop() {
+    if (this._readDeviceLoopSourceId) {
+      try {
+        GLib.source_remove(this._readDeviceLoopSourceId);
+      } catch (err) {
+        console.warn(err);
+      }
+    }
+
+    this._readStart = GLib.get_monotonic_time();
+
+    this._readDeviceLoopSourceId = GLib.idle_add(
+      GLib.PRIORITY_DEFAULT_IDLE,
+      () => {
+        try {
+          this._readDeviceLoop();
+        } catch (err) {
+          console.warn(err);
+        }
+
+        this._readDeviceLoopSourceId = null!;
+        return GLib.SOURCE_REMOVE;
+      }
+    );
+  }
+
   _readDeviceLoop() {
     if (!this._deviceStdout) {
       return this._reconnect();
@@ -260,17 +299,20 @@ export default class GDeejSerial extends GObject.Object {
             throw new Error('Failed to read device');
           }
 
-          const [line] = stream.read_line_finish_utf8(res);
+          let [line] = stream.read_line_finish_utf8(res);
 
           if (line === null) {
             return this._checkErrors();
           }
 
-          const data = this._parseSerialOutput(line);
+          line = line.trim();
 
-          if (data.length) {
-            this._pushToOutput(data);
+          if (!line) {
+            this._queueReadDeviceLoop();
+            return;
           }
+
+          this._bufferOutput(line);
 
           if (!this.connected) {
             this._updateDeviceStatus(serialDeviceStatuses.ACTIVE);
@@ -279,7 +321,7 @@ export default class GDeejSerial extends GObject.Object {
             settings.set_string(settingsKeys.DEVICE_PATH, this._devicePath!);
           }
 
-          this._readDeviceLoop();
+          this._queueReadDeviceLoop();
         } catch (err) {
           if (
             err instanceof Gio.IOErrorEnum &&
@@ -292,7 +334,11 @@ export default class GDeejSerial extends GObject.Object {
 
           this._updateDeviceStatus(serialDeviceStatuses.ERROR);
           this.error = _('Failed to read device');
-          console.warn(err);
+
+          if (err instanceof Error && this._errorRaw !== err.message) {
+            this._errorRaw = err.message;
+            console.warn(err);
+          }
 
           this._reconnect();
         } finally {
@@ -304,14 +350,35 @@ export default class GDeejSerial extends GObject.Object {
     );
   }
 
-  _pushToOutput(values: string[]) {
-    this.output = values;
-
-    this._outputBuffer.push(values);
-
-    while (this._outputBuffer.length > GDeejSerial.OUTPUT_BUFFER_LIMIT) {
-      this._outputBuffer.shift();
+  _bufferOutput(line: string) {
+    if (!line) {
+      return;
     }
+
+    this._outputBuffer.push(line);
+
+    const timeSinceLastRead =
+      GLib.get_monotonic_time() - (this._readStart ?? 0);
+
+    if (
+      timeSinceLastRead > GDeejSerial.BURST_THRESHOLD_US ||
+      this._outputBuffer.length >= GDeejSerial.BURST_THRESHOLD_LINES
+    ) {
+      this._pushOutput();
+      this._outputBuffer.length = 0;
+    }
+  }
+
+  _pushOutput() {
+    const line = this._outputBuffer[this._outputBuffer.length - 1];
+
+    if (!line) {
+      return;
+    }
+
+    const values = this._parseSerialOutput(line);
+
+    this.output = values;
 
     for (const listener of this._listeners) {
       listener(this.output);
@@ -401,11 +468,15 @@ export default class GDeejSerial extends GObject.Object {
             throw new Error(line);
           }
 
-          this._readDeviceLoop();
+          this._queueReadDeviceLoop();
         } catch (err) {
           this._updateDeviceStatus(serialDeviceStatuses.ERROR);
           this.error = _('Failed to read device');
-          console.warn(err);
+
+          if (err instanceof Error && this._errorRaw !== err.message) {
+            this._errorRaw = err.message;
+            console.warn(err);
+          }
 
           this._reconnect();
         } finally {
@@ -415,6 +486,35 @@ export default class GDeejSerial extends GObject.Object {
         }
       }
     );
+  }
+  get error(): string {
+    return this._error;
+  }
+
+  set error(value: string) {
+    this._error = value;
+
+    this.notify('error');
+  }
+
+  get connected(): boolean {
+    return this._connected;
+  }
+
+  set connected(value: boolean) {
+    this._connected = value;
+
+    this.notify('connected');
+  }
+
+  get initialConnect(): boolean {
+    return this._initialConnect;
+  }
+
+  set initialConnect(value: boolean) {
+    this._initialConnect = value;
+
+    this.notify('initialConnect');
   }
 }
 

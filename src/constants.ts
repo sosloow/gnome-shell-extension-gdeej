@@ -27,3 +27,4 @@ export const SLIDER_MIN_VALUE = 0;
 export const SLIDER_MAX_VALUE = 1024;
 
 export const DATA_INPUT_STREAM_BUFFER_SIZE = 4096;
+export const RESOURCE_PATH = '/org/gnome/shell/extensions/gdeej/';

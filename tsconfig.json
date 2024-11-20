@@ -13,7 +13,6 @@
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
     "exactOptionalPropertyTypes": true,
-    "experimentalDecorators": true
   },
   "include": [
     "src/**/*.ts"

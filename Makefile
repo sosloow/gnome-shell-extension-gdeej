@@ -56,7 +56,7 @@ schemas/gschemas.compiled: schemas/org.gnome.shell.extensions.$(NAME).gschema.xm
 	glib-compile-schemas schemas
 
 pack: all
-	cd dist && zip ../$(NAME).zip -9r .
+	cd dist && zip ../$(NAME).zip -9r . -x "assets/*"
 
 install: all
 	rm -rf $(LOCAL_EXTENSIONS_PATH)/$(NAME)@$(DOMAIN)
