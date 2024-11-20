@@ -25,7 +25,7 @@ class GDeejToggle extends QuickSettings.QuickMenuToggle {
       title: _('GDeej'),
       toggleMode: true
     });
-    this.gicon = getIcon(extension.path, 'deej-logo-symbolic');
+    this.gicon = getIcon(extension.path, 'gdeej-logo-symbolic');
 
     settings.bind(
       settingsKeys.SERIAL_ENABLED,
@@ -102,7 +102,7 @@ export class GDeej {
     Gio.resources_register(this._resource);
 
     this._indicator = new GDeejIndicator();
-    this._icon = getIcon(extension.path, 'deej-logo-symbolic');
+    this._icon = getIcon(extension.path, 'gdeej-logo-symbolic');
 
     // @ts-expect-error addExternalIndicator exists
     Main.panel.statusArea.quickSettings.addExternalIndicator(this._indicator);

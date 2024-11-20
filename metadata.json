@@ -3,6 +3,6 @@
   "name": "GDeej",
   "description": "Control your audio with a DIY volume mixer",
   "settings-schema": "org.gnome.shell.extensions.gdeej",
-  "shell-version": ["46"],
+  "shell-version": ["45", "46", "47"],
   "url": "https://github.com/sosloow/gnome-shell-extension-gdeej"
 }

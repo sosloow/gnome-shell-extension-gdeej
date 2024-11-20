@@ -3,6 +3,6 @@ import { RESOURCE_PATH } from '../constants.js';
 
 export function getIcon(extPath: string, str: string): Gio.Icon {
   return Gio.Icon.new_for_string(
-    `resource:///${RESOURCE_PATH}images/${str}.svg`
+    `resource:///${RESOURCE_PATH}icons/${str}.svg`
   );
 }

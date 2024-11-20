@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gresources>
     <gresource prefix="/org/gnome/Shell/Extensions/gdeej/">
-        <file>ui/prefs.ui</file>
-        <file>ui/file-picker-row.ui</file>
-        <file>ui/slider-row.ui</file>
-        <file>ui/app-chooser.ui</file>
-        <file>images/deej-logo-symbolic.svg</file>
+        <file compressed="true" preprocess="xml-stripblanks">ui/prefs.ui</file>
+        <file compressed="true" preprocess="xml-stripblanks">ui/file-picker-row.ui</file>
+        <file compressed="true" preprocess="xml-stripblanks">ui/slider-row.ui</file>
+        <file compressed="true" preprocess="xml-stripblanks">ui/app-chooser.ui</file>
+        <file compressed="true" preprocess="xml-stripblanks">icons/gdeej-logo-symbolic.svg</file>
+        <file compressed="true" preprocess="xml-stripblanks">icons/gdeej-media-eq-symbolic.svg</file>
         <!-- <file>css/stylesheet.css</file> -->
     </gresource>
 </gresources>

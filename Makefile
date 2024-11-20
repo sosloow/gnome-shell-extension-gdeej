@@ -6,14 +6,14 @@ LOCAL_EXTENSIONS_PATH=~/.local/share/gnome-shell/extensions
 
 .DELETE_ON_ERROR:
 
-dist:
-	mkdir -p dist
-
 all: dist/extension.js \
 	dist/schemas \
 	dist/assets \
 	dist/$(NAME).gresource \
 	dist/metadata.json
+
+dist:
+	mkdir -p dist
 
 .npm-install.stamp: package.json
 	npm install --no-audit
@@ -37,7 +37,7 @@ dist/schemas: schemas/gschemas.compiled | dist
 	rm -rf $@
 	cp -r schemas $@
 
-dist/assets: assets/css/stylesheet.css | dist
+dist/assets: assets/css/stylesheet.css assets/icons/* | dist
 	mkdir -p dist/assets
 	cp -r assets/* dist/assets/
 	rm -rf dist/assets/ui

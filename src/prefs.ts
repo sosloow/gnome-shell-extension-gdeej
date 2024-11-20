@@ -31,6 +31,9 @@ export default class GdeejPreferences extends ExtensionPreferences {
       const resourcePath = GLib.build_filenamev([this.path, 'gdeej.gresource']);
       Gio.resources_register(Gio.resource_load(resourcePath));
 
+      const iconTheme = Gtk.IconTheme.get_for_display(window.get_display());
+      iconTheme.add_resource_path('/org/gnome/Shell/Extensions/gdeej/icons');
+
       const dummyPage = new Adw.PreferencesPage();
       window.add(dummyPage);
 
@@ -115,7 +118,6 @@ export default class GdeejPreferences extends ExtensionPreferences {
 
   private _fillSlidersPage() {
     const addButton = this._builder!.get_object('btn-add-slider');
-
     this._listBoxSliders = this._builder!.get_object('list-box-sliders');
 
     addButton.connect('clicked', () => {

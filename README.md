@@ -9,11 +9,11 @@ Control your system's audio through physical sliders using a DIY deej mixer. Thi
    from your distribution's repository
    - For Ubuntu/Debian:
      ```bash
-     sudo apt install socat
+     sudo apt install -y socat
      ```
    - For Fedora:
      ```bash
-     sudo dnf install socat
+     sudo dnf install -y socat
      ```
    - For Arch Linux:
      ```bash
