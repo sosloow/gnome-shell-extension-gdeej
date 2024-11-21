@@ -2,6 +2,8 @@
 
 Control your system's audio through physical sliders using a DIY deej mixer. This extension integrates deej hardware with GNOME Shell's volume controls, allowing you to adjust volume levels for different applications using physical controls.
 
+![](/assets/screenshots/quick-settings.png)
+
 ## Prerequisites
 
 1. This extension requires a hardware deej volume mixer connected to your PC via USB. You'll need to build the hardware component first - see the [original deej project](https://github.com/omriharel/deej) for instructions.
@@ -60,6 +62,16 @@ Control your system's audio through physical sliders using a DIY deej mixer. Thi
   - Invert sliders
   - Select an application as a slider target
 - Steam as a single slider target. Maps any games/apps that are launched under Steam to a single slider
+
+## Screenshots
+
+### General Preferences
+
+![](/assets/screenshots/prefs-general.png)
+
+### Slider Settings
+
+![](/assets/screenshots/prefs-sliders.png)
 
 ## Important Considerations
 
