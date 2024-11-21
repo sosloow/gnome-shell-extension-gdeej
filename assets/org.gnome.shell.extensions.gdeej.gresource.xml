@@ -5,8 +5,8 @@
         <file compressed="true" preprocess="xml-stripblanks">ui/file-picker-row.ui</file>
         <file compressed="true" preprocess="xml-stripblanks">ui/slider-row.ui</file>
         <file compressed="true" preprocess="xml-stripblanks">ui/app-chooser.ui</file>
-        <file compressed="true" preprocess="xml-stripblanks">icons/gdeej-logo-symbolic.svg</file>
-        <file compressed="true" preprocess="xml-stripblanks">icons/gdeej-media-eq-symbolic.svg</file>
+        <!-- <file compressed="true" preprocess="xml-stripblanks">icons/gdeej-logo-symbolic.svg</file> -->
+        <file compressed="true" preprocess="xml-stripblanks" alias="icons/scalable/categories/gdeej-media-eq-symbolic.svg">icons/gdeej-media-eq-symbolic.svg</file>
         <!-- <file>css/stylesheet.css</file> -->
     </gresource>
 </gresources>
