@@ -138,6 +138,17 @@ export default class GDeejVolumeControl extends GObject.Object {
       ) {
         slider.streams.add(stream);
       }
+
+      try {
+        if (slider.target === SliderTarget.REGEX &&
+          slider.customApp &&
+          (new RegExp(slider.customApp).test(name))
+        ) {
+          slider.streams.add(stream);
+        }
+      } catch (e) {
+        console.warn("Syntax error in RegExp targets");
+      }
     }
 
     const steamSlider = this._sliders.find(
@@ -177,7 +188,7 @@ export default class GDeejVolumeControl extends GObject.Object {
       const oldSlider = oldSliders.find(
         (oldSlider) =>
           oldSlider.target === slider.target &&
-          (oldSlider.target !== SliderTarget.CUSTOM_APP ||
+          ((oldSlider.target !== SliderTarget.CUSTOM_APP && oldSlider.target !== SliderTarget.REGEX) ||
             oldSlider.customApp === slider.customApp)
       );
 
@@ -209,6 +220,8 @@ export default class GDeejVolumeControl extends GObject.Object {
         return new Set([this._control.get_default_source()]);
       case SliderTarget.CUSTOM_APP:
         return this._getStreamsByAppName(appName);
+      case SliderTarget.REGEX:
+        return this._getStreamsByRegex(appName);
       default:
         return new Set();
     }
@@ -225,6 +238,25 @@ export default class GDeejVolumeControl extends GObject.Object {
       }
     }
 
+    return result;
+  }
+
+  private _getStreamsByRegex(regex: string): Set<Gvc.MixerStream> {
+    const result: Set<Gvc.MixerStream> = new Set();
+
+    try {
+      let built_regex = new RegExp(regex);
+
+      for (const [name, streams] of this._streams.entries()) {
+        if (!(built_regex.test(name))) continue;
+
+        for (const stream of streams) {
+          result.add(stream);
+        }
+      }
+    } catch (e) {
+      console.warn("Syntax error in RegExp targets");
+    }
     return result;
   }
 }
