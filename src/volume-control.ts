@@ -139,11 +139,15 @@ export default class GDeejVolumeControl extends GObject.Object {
         slider.streams.add(stream);
       }
 
-      if (slider.target === SliderTarget.REGEX &&
-        slider.customApp &&
-        (new RegExp(slider.customApp).test(name))
-      ) {
-        slider.streams.add(stream);
+      try {
+        if (slider.target === SliderTarget.REGEX &&
+          slider.customApp &&
+          (new RegExp(slider.customApp).test(name))
+        ) {
+          slider.streams.add(stream);
+        }
+      } catch (e) {
+        console.warn("Syntax error in RegExp targets");
       }
     }
 
@@ -240,14 +244,19 @@ export default class GDeejVolumeControl extends GObject.Object {
   private _getStreamsByRegex(regex: string): Set<Gvc.MixerStream> {
     const result: Set<Gvc.MixerStream> = new Set();
 
-    for (const [name, streams] of this._streams.entries()) {
-      if (!(new RegExp(regex).test(name))) continue;
+    try {
+      let built_regex = new RegExp(regex);
 
-      for (const stream of streams) {
-        result.add(stream);
+      for (const [name, streams] of this._streams.entries()) {
+        if (!(built_regex.test(name))) continue;
+
+        for (const stream of streams) {
+          result.add(stream);
+        }
       }
+    } catch (e) {
+      console.warn("Syntax error in RegExp targets");
     }
-
     return result;
   }
 }
