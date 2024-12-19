@@ -117,7 +117,8 @@ export class GDeejSliderRow extends Adw.PreferencesRow {
       SYSTEM: _('System'),
       MIC: _('Microphone'),
       STEAM: _('Steam'),
-      CUSTOM_APP: _('Application')
+      CUSTOM_APP: _('Application'),
+      REGEX: _('RegExp')
     };
 
     let targetKey: keyof typeof SliderTarget;
@@ -239,7 +240,7 @@ export class GDeejSliderRow extends Adw.PreferencesRow {
   }
 
   private _updateView() {
-    if (this._dropdownTarget.get_selected() === SliderTarget.CUSTOM_APP) {
+    if (this._dropdownTarget.get_selected() === SliderTarget.CUSTOM_APP || this._dropdownTarget.get_selected() === SliderTarget.REGEX) {
       this._entryCustomApp.get_parent()!.get_parent()!.visible = true;
     } else {
       this._entryCustomApp.get_parent()!.get_parent()!.visible = false;
