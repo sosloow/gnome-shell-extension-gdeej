@@ -85,6 +85,33 @@ export default class GdeejPreferences extends ExtensionPreferences {
   }
 
   private _fillGeneralPage() {
+    {
+      const comboRowNoiseReduction = this._builder!.get_object(
+        'combo-row-noise-reduction'
+      ) as Adw.ComboRow;
+      
+      const comboRowOptions = new Gtk.StringList();
+      comboRowNoiseReduction.set_model(comboRowOptions);
+
+      const currentNoiseReduction = this._settings!.get_double(
+        settingsKeys.NOISE_REDUCTION
+      );
+      
+      comboRowOptions.append("10");
+      comboRowOptions.append("5");
+      comboRowOptions.append("3.5");
+      comboRowOptions.append("2.5");
+      comboRowOptions.append("1.5");
+      comboRowNoiseReduction.selected = [10, 5, 3.5, 2.5, 1.5].indexOf(currentNoiseReduction);
+
+      comboRowNoiseReduction.connect('notify::selected', () => {
+        this._settings!.set_double(
+          settingsKeys.NOISE_REDUCTION,
+          [10, 5, 3.5, 2.5, 1.5][comboRowNoiseReduction.get_selected()]
+        );
+      });
+    }
+
     const comboRowBaudRate = this._builder!.get_object(
       'combo-row-baud-rate'
     ) as Adw.ComboRow;

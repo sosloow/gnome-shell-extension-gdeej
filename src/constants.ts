@@ -4,6 +4,7 @@ export const settingsKeys = {
   DEVICE_AUTO_DETECT: 'device-auto-detect',
   DEVICE_AUTO_RECONNECT: 'device-auto-reconnect',
   DEVICE_BAUD_RATE: 'device-baud-rate',
+  NOISE_REDUCTION: 'noise-reduction',
   SLIDERS: 'sliders'
 };
 
