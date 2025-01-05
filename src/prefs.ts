@@ -26,7 +26,7 @@ export default class GdeejPreferences extends ExtensionPreferences {
 
   private GDeejSliderRow: any;
 
-  private  static NOISE_REDUCTION_LEVELS: number[] = [10, 5, 3.5, 2.5, 1.5];
+  private static NOISE_REDUCTION_LEVELS: number[] = [10, 5, 3.5, 2.5, 1.5];
 
   async fillPreferencesWindow(window: Adw.PreferencesWindow) {
     try {
@@ -104,12 +104,17 @@ export default class GdeejPreferences extends ExtensionPreferences {
       }
 
       // Default to item 0 if indexOf returns -1 meaning not found
-      comboRowNoiseReduction.selected = Math.min(0, GdeejPreferences.NOISE_REDUCTION_LEVELS.indexOf(currentNoiseReduction));
+      comboRowNoiseReduction.selected = Math.min(
+        0,
+        GdeejPreferences.NOISE_REDUCTION_LEVELS.indexOf(currentNoiseReduction)
+      );
 
       comboRowNoiseReduction.connect('notify::selected', () => {
         this._settings!.set_double(
           settingsKeys.NOISE_REDUCTION,
-          [10, 5, 3.5, 2.5, 1.5][comboRowNoiseReduction.get_selected()]
+          GdeejPreferences.NOISE_REDUCTION_LEVELS[
+            comboRowNoiseReduction.get_selected()
+          ]
         );
       });
     }

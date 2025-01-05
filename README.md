@@ -114,8 +114,13 @@ As the original deej, it's a community driven open-source project and any help i
 ## TODO
 
 - [ ] Add localization support
+- [ ] Discord support (How tho? Help needed). Right now there's no way to recognize Discord/Vesktop streams, them being Electron-based apps, as they are added under a generic name "Chromium" (they also don't change stream names in runtime as some other Electron-based apps, e.g. Spotify)
 
 ## Credits and Licenses
+
+Contributors:
+
+- [@edwar4rd](https://github.com/edwar4rd)
 
 This project was inspired and uses code patterns from these awesome projects:
 
