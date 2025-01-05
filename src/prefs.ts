@@ -26,6 +26,8 @@ export default class GdeejPreferences extends ExtensionPreferences {
 
   private GDeejSliderRow: any;
 
+  private  static NOISE_REDUCTION_LEVELS: number[] = [10, 5, 3.5, 2.5, 1.5];
+
   async fillPreferencesWindow(window: Adw.PreferencesWindow) {
     try {
       const resourcePath = GLib.build_filenamev([this.path, 'gdeej.gresource']);
@@ -85,6 +87,33 @@ export default class GdeejPreferences extends ExtensionPreferences {
   }
 
   private _fillGeneralPage() {
+    {
+      const comboRowNoiseReduction = this._builder!.get_object(
+        'combo-row-noise-reduction'
+      ) as Adw.ComboRow;
+
+      const comboRowOptions = new Gtk.StringList();
+      comboRowNoiseReduction.set_model(comboRowOptions);
+
+      const currentNoiseReduction = this._settings!.get_double(
+        settingsKeys.NOISE_REDUCTION
+      );
+
+      for (const level of GdeejPreferences.NOISE_REDUCTION_LEVELS) {
+        comboRowOptions.append(String(level));
+      }
+
+      // Default to item 0 if indexOf returns -1 meaning not found
+      comboRowNoiseReduction.selected = Math.min(0, GdeejPreferences.NOISE_REDUCTION_LEVELS.indexOf(currentNoiseReduction));
+
+      comboRowNoiseReduction.connect('notify::selected', () => {
+        this._settings!.set_double(
+          settingsKeys.NOISE_REDUCTION,
+          [10, 5, 3.5, 2.5, 1.5][comboRowNoiseReduction.get_selected()]
+        );
+      });
+    }
+
     const comboRowBaudRate = this._builder!.get_object(
       'combo-row-baud-rate'
     ) as Adw.ComboRow;

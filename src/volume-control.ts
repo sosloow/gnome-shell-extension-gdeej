@@ -59,10 +59,13 @@ export default class GDeejVolumeControl extends GObject.Object {
         continue;
       }
 
-      slider.value = value;
-      slider.level = getSliderLevel(slider, value);
+      const new_level = getSliderLevel(slider, value);
+      if (Math.abs(new_level - slider.level) > settings.get_double(settingsKeys.NOISE_REDUCTION)) {
+        slider.value = value;
+        slider.level = new_level;
 
-      this.setVolume(slider, slider.level);
+        this.setVolume(slider, slider.level);
+      }
     }
   }
 

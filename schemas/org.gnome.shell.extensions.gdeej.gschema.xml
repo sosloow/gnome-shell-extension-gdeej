@@ -16,6 +16,12 @@
             <summary>Baud rate of serial device</summary>
             <description></description>
         </key>
+        <key name="noise-reduction" type="d">
+            <default>2.5</default>
+            <summary>Change the threshold before the volume starts moving</summary>
+            <description></description>
+            <range min="0" max="20"/>
+        </key>
         <key name="device-auto-reconnect" type="b">
             <default>true</default>
             <summary>Auto-reconnect serial device</summary>
