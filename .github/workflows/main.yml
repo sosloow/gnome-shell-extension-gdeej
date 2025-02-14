@@ -2,31 +2,26 @@ name: Build and release GNOME shell extension
 
 on:
   push:
-    branches: ['main']
+    branches: ['main', 'actions']
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        node-version: [22.x]
-
     steps:
       - uses: actions/checkout@v4
 
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
+      - name: Install blueprint-compiler
+        run: sudo apt-get install libgtk-4-dev libadwaita-1-dev blueprint-compiler gobject-introspection
+
+      - name: Install packages
+        uses: pnpm/action-setup@v4
         with:
-          node-version: ${{ matrix.node-version }}
+          version: 10
+          run_install: true
 
-      - name: Install gobject-introspection blueprint-compiler
-        run: sudo apt-get install blueprint-compiler
-
-      - name: Build
-        run: |
-          npm install
-          make pack
+      - name: Build & pack .zip
+        run: make pack
 
       - name: Release
         uses: softprops/action-gh-release@v2
