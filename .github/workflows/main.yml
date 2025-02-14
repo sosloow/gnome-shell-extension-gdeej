@@ -2,7 +2,7 @@ name: Build and release GNOME shell extension
 
 on:
   push:
-    branches: ['main', 'actions']
+    tags: ['*']
 
 jobs:
   build:
