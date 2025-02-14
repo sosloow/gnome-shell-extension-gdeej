@@ -10,7 +10,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [18.x, 20.x, 22.x]
+        node-version: [22.x]
 
     steps:
       - uses: actions/checkout@v4
@@ -20,7 +20,7 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
-      - name: Install blueprint-compiler
+      - name: Install gobject-introspection blueprint-compiler
         run: sudo apt-get install blueprint-compiler
 
       - name: Build
