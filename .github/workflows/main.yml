@@ -15,7 +15,9 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install blueprint-compiler
-        run: sudo apt-get install libgtk-4-dev libadwaita-1-dev blueprint-compiler gobject-introspection
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends libgtk-4-dev libadwaita-1-dev blueprint-compiler gobject-introspection
 
       - name: Install packages
         uses: pnpm/action-setup@v4
